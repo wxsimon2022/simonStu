@@ -65,7 +65,7 @@ onUnmounted(() => {
 async function fetchData() {
   loading.value = true
   const res = await api('/api/permission')
-  if (res.code === 200) treeData.value = res.data.tree || []
+  if (res.code === 200) { treeData.value = res.data.tree || [] } else { console.error("菜单列表加载失败", res) }
   loading.value = false
 }
 

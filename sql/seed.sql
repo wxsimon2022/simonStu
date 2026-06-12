@@ -80,7 +80,11 @@ SELECT r.id, p.id FROM c_roles r, c_permissions p WHERE r.name = 'admin';
 -- =========================================================
 -- 权限（菜单）类型：dir=目录 menu=菜单 btn=按钮
 -- =========================================================
-ALTER TABLE c_permissions ADD COLUMN type VARCHAR(16) NOT NULL DEFAULT 'menu' COMMENT 'dir=目录 menu=菜单 btn=按钮' AFTER description;
+SET @cnt = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'c_permissions' AND COLUMN_NAME = 'type');
+SET @q = IF(@cnt = 0, 'ALTER TABLE c_permissions ADD COLUMN type VARCHAR(16) NOT NULL DEFAULT ''menu'' COMMENT ''dir=目录 menu=菜单 btn=按钮'' AFTER description', 'SELECT 1 AS done');
+PREPARE s FROM @q;
+EXECUTE s;
+DEALLOCATE PREPARE s;
 
 UPDATE c_permissions SET type = 'dir' WHERE name IN ('user', 'role', 'admin', 'perm');
 UPDATE c_permissions SET type = 'menu' WHERE name LIKE '%:list';
