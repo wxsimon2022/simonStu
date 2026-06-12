@@ -3,10 +3,11 @@ package model
 
 import "time"
 
-// BaseModel 公共基础字段，嵌入到业务模型中统一管理主键和时间戳。
+// BaseModel 公共基础字段，所有业务模型嵌入此结构。
+// 数据库字段统一使用 is_delete / create_time / update_time，无外键。
 type BaseModel struct {
-	ID        int       `gorm:"column:id;primaryKey;autoIncrement" json:"-"`
-	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"-"`
-	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"-"`
-	// DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;index" json:"-"` // 软删除，按需开启
+	ID         int       `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	IsDelete   int       `gorm:"column:is_delete;type:tinyint;not null;default:0" json:"-"`
+	CreateTime time.Time `gorm:"column:create_time;autoCreateTime" json:"-"`
+	UpdateTime time.Time `gorm:"column:update_time;autoUpdateTime" json:"-"`
 }

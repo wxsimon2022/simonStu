@@ -8,14 +8,15 @@ import (
 
 	"github.com/wxsimon8888/simonStu/config"
 	"github.com/wxsimon8888/simonStu/internal/database"
+	"github.com/wxsimon8888/simonStu/internal/handler"
 	"github.com/wxsimon8888/simonStu/internal/logger"
 	"github.com/wxsimon8888/simonStu/internal/router"
+	"github.com/wxsimon8888/simonStu/internal/service"
 )
 
 func main() {
 	cfg := config.Load()
 
-	// 设置时区（影响 time.Now 等）
 	loc, err := time.LoadLocation(cfg.TZ)
 	if err != nil {
 		log.Fatalf("时区设置失败: %v", err)
@@ -26,6 +27,9 @@ func main() {
 
 	database.InitRedis(cfg)
 	database.InitMySQL(cfg)
+
+	// 初始化认证服务
+	handler.Auth = service.NewAuthService(cfg.JWTSecret)
 
 	r := router.Setup(cfg.Mode)
 

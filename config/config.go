@@ -11,10 +11,11 @@ import (
 
 // Config 应用全部配置项。
 type Config struct {
-	Port   string // HTTP 监听端口，默认 ":8080"
-	Mode   string // Gin 运行模式：debug / release / test
-	TZ     string // 时区，默认 Asia/Shanghai
-	LogDir string // 日志输出目录，默认 storage/logs
+	Port      string // HTTP 监听端口，默认 ":8080"
+	Mode      string // Gin 运行模式：debug / release / test
+	TZ        string // 时区，默认 Asia/Shanghai
+	LogDir    string // 日志输出目录，默认 storage/logs
+	JWTSecret string // JWT 签名密钥
 
 	RedisHost     string // Redis 地址
 	RedisPort     string // Redis 端口
@@ -35,10 +36,11 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:   getEnv("PORT", "8080"),
-		Mode:   getEnv("GIN_MODE", "debug"),
-		TZ:     getEnv("TZ", "Asia/Shanghai"),
-		LogDir: getEnv("LOG_DIR", "storage/logs"),
+		Port:      getEnv("PORT", "8080"),
+		Mode:      getEnv("GIN_MODE", "debug"),
+		TZ:        getEnv("TZ", "Asia/Shanghai"),
+		LogDir:    getEnv("LOG_DIR", "storage/logs"),
+		JWTSecret: getEnv("JWT_SECRET", "simon-stu-secret-key"),
 
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
