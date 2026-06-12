@@ -1,6 +1,7 @@
 services:
   app:
     build: .
+    image: go-app-server:latest
     ports:
       - "${PORT:-8080}:8080"
     env_file:
