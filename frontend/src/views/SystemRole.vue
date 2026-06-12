@@ -5,6 +5,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const list = ref([])
 const allPerms = ref([])
+const permTree = ref([])
+const permTreeRef = ref(null)
+const checkedPermIds = ref([])
 const loading = ref(false)
 const createVisible = ref(false)
 const editVisible = ref(false)
@@ -21,7 +24,8 @@ async function fetchRoles() {
 async function fetchPerms() {
   const res = await api('/api/permission')
   if (res.code === 200) {
-    allPerms.value = res.data.list
+    allPerms.value = res.data.list || []
+    permTree.value = res.data.tree || []
   } else {
     console.error('权限列表加载失败', res)
   }
@@ -39,16 +43,20 @@ async function handleCreate() {
 }
 
 function openEdit(row) {
+  checkedPermIds.value = allPerms.value
+    .filter(p => row.permissions?.includes(p.name))
+    .map(p => p.id)
   editForm.value = {
     id: row.id,
     description: row.description,
     status: row.status,
-    permission_ids: allPerms.value.filter(p => row.permissions?.includes(p.name)).map(p => p.id),
+    permission_ids: [...checkedPermIds.value],
   }
   editVisible.value = true
 }
 
 async function handleEdit() {
+  editForm.value.permission_ids = permTreeRef.value?.getCheckedKeys() || []
   const res = await api('/api/role', { method: 'PUT', body: JSON.stringify(editForm.value) })
   if (res.code === 200) {
     ElMessage.success('更新成功')
@@ -111,24 +119,25 @@ onMounted(() => { fetchRoles(); fetchPerms() })
     </template>
   </el-dialog>
 
-  <el-dialog v-model="editVisible" title="编辑角色" width="520px">
+  <el-dialog v-model="editVisible" title="编辑角色" width="620px">
     <el-form :model="editForm" label-width="80px">
       <el-form-item label="描述"><el-input v-model="editForm.description" /></el-form-item>
       <el-form-item label="状态">
         <el-switch v-model="editForm.status" :active-value="1" :inactive-value="0" />
       </el-form-item>
       <el-form-item label="权限">
-        <el-checkbox-group v-model="editForm.permission_ids">
-          <el-checkbox
-            v-for="p in allPerms"
-            :key="p.id"
-            :label="p.id"
-            style="margin:4px 12px 4px 0"
-          >
-            {{ p.name }}
-          </el-checkbox>
-        </el-checkbox-group>
-        <div v-if="!allPerms.length" style="color:#999;font-size:13px;margin-top:4px">暂无可用权限</div>
+        <el-tree
+          ref="permTreeRef"
+          :data="permTree"
+          :props="{ children: 'children', label: 'name' }"
+          node-key="id"
+          show-checkbox
+          check-strictly
+          default-expand-all
+          :default-checked-keys="checkedPermIds"
+          class="perm-tree"
+        />
+        <div v-if="!permTree.length" style="color:#999;font-size:13px;margin-top:4px">暂无可用权限</div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -137,4 +146,14 @@ onMounted(() => { fetchRoles(); fetchPerms() })
     </template>
   </el-dialog>
 </template>
-<VUE
+
+<style scoped>
+.perm-tree {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  width: 100%;
+}
+</style>

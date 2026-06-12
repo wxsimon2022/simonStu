@@ -4,6 +4,8 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
+
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -494,4 +496,69 @@ func SystemPermissionList(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"tree": tree, "list": flat})
+}
+
+// MenuItem 菜单树节点
+type MenuItem struct {
+	ID          int        `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Type        string     `json:"type"`
+	Route       string     `json:"route"`
+	Children    []MenuItem `json:"children"`
+}
+
+// SystemMenuList 返回当前用户的菜单树（基于权限过滤）
+func SystemMenuList(c *gin.Context) {
+	if database.DB == nil {
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
+		return
+	}
+	isAdmin, _ := c.Get("is_admin")
+	userID, _ := c.Get("user_id")
+
+	var perms []model.Permission
+	query := database.DB.Where("type IN ('dir', 'menu') AND is_delete = 0").Order("id ASC")
+	if !isAdmin.(bool) {
+		query = query.Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
+			Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
+			Where("c_admin_roles.user_id = ? AND c_admin_roles.is_delete = 0 AND c_role_permissions.is_delete = 0", userID)
+	}
+	query.Find(&perms)
+
+	group := map[int][]MenuItem{}
+	for _, p := range perms {
+		route := ""
+		if p.Type == "menu" {
+			parts := strings.SplitN(p.Name, ":", 2)
+			if len(parts) == 2 && parts[1] == "list" {
+				route = "/" + parts[0]
+				if parts[0] == "perm" {
+					route = "/permission"
+				}
+			}
+		}
+		pid := 0
+		if p.ParentID != nil {
+			pid = *p.ParentID
+		}
+		group[pid] = append(group[pid], MenuItem{
+			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Route: route,
+		})
+	}
+
+	var tree []MenuItem
+	for _, p := range perms {
+		if p.ParentID == nil {
+			node := MenuItem{
+				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
+			}
+			node.Children = group[p.ID]
+			tree = append(tree, node)
+		}
+	}
+	if tree == nil {
+		tree = []MenuItem{}
+	}
+	response.Success(c, gin.H{"menus": tree})
 }

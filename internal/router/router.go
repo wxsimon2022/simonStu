@@ -34,6 +34,8 @@ func Setup(mode string) *gin.Engine {
 
 			// 系统管理（system.go）
 			RegisterSystemRoutes(auth)
+			auth.GET("/menus", handler.SystemMenuList)
+
 		}
 	}
 	return r

@@ -1,28 +1,41 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Management, User, Setting, Fold, Expand } from '@element-plus/icons-vue'
-import { api, removeToken } from './utils/request'
+import { Management, User, Setting, Fold, Expand, Menu, UserFilled } from '@element-plus/icons-vue'
+import { api, getToken, removeToken } from './utils/request'
 
 const router = useRouter()
 const route = useRoute()
 const isCollapse = ref(false)
 const sidebarWidth = ref('220px')
+const menus = ref([])
 
 const isLoginPage = computed(() => route.path === '/login')
 
+// 根据路由加载菜单
+watch(() => route.path, async (path) => {
+  if (path !== '/login' && getToken()) {
+    const res = await api('/api/menus')
+    if (res.code === 200) menus.value = res.data.menus || []
+  }
+}, { immediate: true })
+
+function getMenuIcon(name) {
+  const k = (name || '').split(':')[0]
+  const map = { user: User, admin: Management, role: UserFilled, perm: Setting }
+  return map[k] || Menu
+}
+
 async function handleLogout() {
-  try { await api("/api/auth/logout", { method: "POST" }) } catch (_) {}
+  try { await api('/api/auth/logout', { method: 'POST' }) } catch (_) {}
   removeToken()
   router.push('/login')
 }
 </script>
 
 <template>
-  <!-- 登录页：全屏居中，无侧边栏 -->
   <router-view v-if="isLoginPage" />
 
-  <!-- 后台首页：侧边栏布局 -->
   <el-container v-else style="height: 100vh">
     <el-aside :width="isCollapse ? '64px' : sidebarWidth">
       <div class="logo">
@@ -41,16 +54,18 @@ async function handleLogout() {
           <el-icon><Management /></el-icon>
           <template #title>仪表盘</template>
         </el-menu-item>
-        <el-sub-menu index="system">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/admin">管理员管理</el-menu-item>
-          <el-menu-item index="/role">角色管理</el-menu-item>
-          <el-menu-item index="/permission">菜单列表</el-menu-item>
-        </el-sub-menu>
 
+        <template v-for="item in menus" :key="item.id">
+          <el-sub-menu v-if="item.type === 'dir' && item.children?.length" :index="'dir-' + item.id">
+            <template #title>
+              <el-icon><component :is="getMenuIcon(item.name)" /></el-icon>
+              <span>{{ item.description || item.name }}</span>
+            </template>
+            <el-menu-item v-for="child in item.children" :key="child.id" :index="child.route || ''">
+              <template #title>{{ child.description || child.name }}</template>
+            </el-menu-item>
+          </el-sub-menu>
+        </template>
       </el-menu>
     </el-aside>
 
