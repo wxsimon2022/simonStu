@@ -1,4 +1,4 @@
-// 路由注册。组装所有中间件和 handler，暴露 Setup 函数给 main 调用。
+// Package router 路由注册。组装所有中间件和 handler。
 package router
 
 import (

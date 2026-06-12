@@ -1,4 +1,3 @@
-// 数据库层 — Redis 连接初始化。
 package database
 
 import (

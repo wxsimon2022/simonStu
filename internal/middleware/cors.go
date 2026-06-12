@@ -1,4 +1,4 @@
-// HTTP 中间件。
+// Package middleware HTTP 中间件。
 package middleware
 
 import (

@@ -1,4 +1,4 @@
-// 数据模型。定义数据库表对应的 Go 结构体。
+// Package model 数据模型。定义数据库表对应的 Go 结构体。
 package model
 
 import "time"

@@ -1,4 +1,4 @@
-// HTTP handler。接收请求、调用下层、返回标准响应。
+// Package handler 接收请求、调用下层、返回标准响应。
 package handler
 
 import (

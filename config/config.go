@@ -1,4 +1,4 @@
-// 配置管理。从 .env 或环境变量读取配置，提供默认值。
+// Package config 从 .env 或环境变量读取配置，提供默认值。
 package config
 
 import (
@@ -11,9 +11,9 @@ import (
 
 // Config 应用全部配置项。
 type Config struct {
-	Port string // HTTP 监听端口，默认 ":8080"
-	Mode string // Gin 运行模式：debug / release / test
-
+	Port   string // HTTP 监听端口，默认 ":8080"
+	Mode   string // Gin 运行模式：debug / release / test
+	TZ     string // 时区，默认 Asia/Shanghai
 	LogDir string // 日志输出目录，默认 storage/logs
 
 	RedisHost     string // Redis 地址
@@ -35,9 +35,9 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port: getEnv("PORT", "8080"),
-		Mode: getEnv("GIN_MODE", "debug"),
-
+		Port:   getEnv("PORT", "8080"),
+		Mode:   getEnv("GIN_MODE", "debug"),
+		TZ:     getEnv("TZ", "Asia/Shanghai"),
 		LogDir: getEnv("LOG_DIR", "storage/logs"),
 
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),

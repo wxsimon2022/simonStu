@@ -1,3 +1,5 @@
+// Package logger 日志管理。支持终端输出和按天拆分文件。
+
 package logger
 
 import (

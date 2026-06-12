@@ -1,4 +1,4 @@
-// 通用仓储层。基于 Go 泛型提供 CRUD 基础操作，减少业务模型重复代码。
+// Package repository 通用仓储层。基于 Go 泛型提供 CRUD 基础操作。
 package repository
 
 import (

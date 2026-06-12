@@ -1,4 +1,4 @@
-// 统一 HTTP 响应格式。所有 API 返回固定结构：{ code, data, message }。
+// Package response 统一 HTTP 响应格式。所有 API 返回固定结构：{ code, data, message }。
 package response
 
 import (

@@ -1,4 +1,4 @@
-// 数据库层 — MySQL 连接初始化。
+// Package database 数据库连接初始化。
 package database
 
 import (
