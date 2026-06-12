@@ -3,12 +3,13 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/wxsimon8888/simonStu/internal/database"
 	"github.com/wxsimon8888/simonStu/internal/logger"
+	"github.com/wxsimon8888/simonStu/internal/model"
 	"github.com/wxsimon8888/simonStu/internal/repository"
 	"github.com/wxsimon8888/simonStu/internal/response"
 )
@@ -20,17 +21,18 @@ type userItem struct {
 	CreatedAt string `json:"created_at"`
 }
 
-// UserList 查询 c_users 用户列表（分页）
+// UserList 查询全部 c_users 用户（不分页）
 func UserList(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-
-	users, total, err := repository.UserRepo.List(page, size)
-	if err != nil {
-		logger.Errorf(c, "UserList 查询失败: %v", err)
-		response.Error(c, http.StatusInternalServerError, "查询失败: "+err.Error())
+	if database.DB == nil {
+		logger.Errorf(c, "UserList 数据库未连接")
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
 		return
 	}
+
+	var users []model.Users
+	database.DB.Select("id, username, is_admin, created_at").
+		Order("id DESC").
+		Find(&users)
 
 	list := make([]userItem, len(users))
 	for i, u := range users {
@@ -42,10 +44,10 @@ func UserList(c *gin.Context) {
 		}
 	}
 
-	logger.Infof(c, "UserList 查询成功 page=%d size=%d total=%d", page, size, total)
+	logger.Infof(c, "UserList 查询成功 total=%d", len(users))
 	response.Success(c, gin.H{
 		"list":  list,
-		"total": total,
+		"total": len(users),
 	})
 }
 
@@ -100,6 +102,6 @@ func UserUpdate(c *gin.Context) {
 		ID:        user.ID,
 		Username:  user.Username,
 		IsAdmin:   user.IsAdmin,
-		CreatedAt: user.CreatedAt.Format(time.DateOnly),
+		CreatedAt: user.CreatedAt.Format(time.DateTime),
 	})
 }

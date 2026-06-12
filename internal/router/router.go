@@ -28,6 +28,10 @@ func Setup(mode string) *gin.Engine {
 
 		api.GET("/user", handler.UserList)
 		api.PUT("/user", handler.UserUpdate)
+
+		// 并发编程示例
+		api.POST("/concurrent/process", handler.ConcurrentProcess)
+		api.GET("/concurrent/fetch", handler.ConcurrentMultiFetch)
 	}
 
 	return r
