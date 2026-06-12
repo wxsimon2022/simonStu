@@ -48,7 +48,7 @@ async function handleLogout() {
           </template>
           <el-menu-item index="/admin">管理员管理</el-menu-item>
           <el-menu-item index="/role">角色管理</el-menu-item>
-          <el-menu-item index="/permission">权限列表</el-menu-item>
+          <el-menu-item index="/permission">菜单列表</el-menu-item>
         </el-sub-menu>
 
       </el-menu>

@@ -76,3 +76,12 @@ UPDATE c_permissions SET parent_id = (SELECT id FROM (SELECT id FROM c_permissio
 -- admin 角色获取所有权限（含新加的父级权限）
 INSERT IGNORE INTO c_role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM c_roles r, c_permissions p WHERE r.name = 'admin';
+
+-- =========================================================
+-- 权限（菜单）类型：dir=目录 menu=菜单 btn=按钮
+-- =========================================================
+ALTER TABLE c_permissions ADD COLUMN type VARCHAR(16) NOT NULL DEFAULT 'menu' COMMENT 'dir=目录 menu=菜单 btn=按钮' AFTER description;
+
+UPDATE c_permissions SET type = 'dir' WHERE name IN ('user', 'role', 'admin', 'perm');
+UPDATE c_permissions SET type = 'menu' WHERE name LIKE '%:list';
+UPDATE c_permissions SET type = 'btn' WHERE name LIKE '%:create' OR name LIKE '%:update' OR name LIKE '%:delete';

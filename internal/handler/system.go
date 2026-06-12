@@ -345,16 +345,20 @@ func SystemRolePermissions(c *gin.Context) {
 
 // ========================= 权限 CRUD =========================
 
+// ========================= 权限（菜单）CRUD =========================
+
 type PermissionTreeItem struct {
 	ID          int                  `json:"id"`
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
+	Type        string               `json:"type"` // dir / menu / btn
 	Children    []PermissionTreeItem `json:"children"`
 }
 
 type PermissionCreateRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
+	Type        string `json:"type"`
 	ParentID    *int   `json:"parent_id"`
 }
 
@@ -362,6 +366,7 @@ type PermissionUpdateRequest struct {
 	ID          int    `json:"id" binding:"required"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Type        string `json:"type"`
 	ParentID    *int   `json:"parent_id"`
 }
 
@@ -377,7 +382,7 @@ func SystemPermissionCreate(c *gin.Context) {
 		return
 	}
 	perm := model.Permission{
-		Name: req.Name, Description: req.Description, ParentID: req.ParentID,
+		Name: req.Name, Description: req.Description, Type: req.Type, ParentID: req.ParentID,
 	}
 	if err := database.DB.Create(&perm).Error; err != nil {
 		logger.Errorf(c, "SystemPermissionCreate 失败: %v", err)
@@ -405,6 +410,9 @@ func SystemPermissionUpdate(c *gin.Context) {
 	}
 	if req.Description != "" {
 		updates["description"] = req.Description
+	}
+	if req.Type != "" {
+		updates["type"] = req.Type
 	}
 	if req.ParentID != nil {
 		if *req.ParentID > 0 {
@@ -466,7 +474,7 @@ func SystemPermissionList(c *gin.Context) {
 			pid = *p.ParentID
 		}
 		group[pid] = append(group[pid], PermissionTreeItem{
-			ID: p.ID, Name: p.Name, Description: p.Description,
+			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
 		})
 	}
 
@@ -475,7 +483,7 @@ func SystemPermissionList(c *gin.Context) {
 	for _, p := range flat {
 		if p.ParentID == nil {
 			node := PermissionTreeItem{
-				ID: p.ID, Name: p.Name, Description: p.Description,
+				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
 			}
 			node.Children = group[p.ID]
 			tree = append(tree, node)
