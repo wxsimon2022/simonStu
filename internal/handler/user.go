@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,35 +17,6 @@ type userItem struct {
 	Username  string `json:"username"`
 	IsAdmin   bool   `json:"is_admin"`
 	CreatedAt string `json:"create_time"`
-}
-
-// UserList 查询用户列表（分页）
-func UserList(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-
-	users, total, err := repository.UserRepo.List(page, size)
-	if err != nil {
-		logger.Errorf(c, "UserList 查询失败: %v", err)
-		response.Error(c, http.StatusInternalServerError, "查询失败: "+err.Error())
-		return
-	}
-
-	list := make([]userItem, len(users))
-	for i, u := range users {
-		list[i] = userItem{
-			ID:        u.ID,
-			Username:  u.Username,
-			IsAdmin:   u.IsAdmin,
-			CreatedAt: u.CreateTime.Format(time.DateOnly),
-		}
-	}
-
-	logger.Infof(c, "UserList 查询成功 page=%d size=%d total=%d", page, size, total)
-	response.Success(c, gin.H{
-		"list":  list,
-		"total": total,
-	})
 }
 
 type UserUpdateRequest struct {

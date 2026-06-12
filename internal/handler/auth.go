@@ -1,8 +1,10 @@
-// Package handler 认证 handler。登录、获取用户信息。
+// Package handler 认证 handler。登录、注销、获取用户信息。
 package handler
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,14 +23,13 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Login 用户登录，验证账号密码后返回 JWT 令牌。
+// Login 用户登录。
 func Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "请输入用户名和密码")
 		return
 	}
-
 	if database.DB == nil {
 		logger.Errorf(c, "Login 数据库未连接")
 		response.Error(c, http.StatusInternalServerError, "数据库未连接")
@@ -37,11 +38,10 @@ func Login(c *gin.Context) {
 
 	var user model.Users
 	if err := database.DB.Where("username = ? AND is_delete = 0", req.Username).First(&user).Error; err != nil {
-		logger.Errorf(c, "Login 用户不存在或已删除 username=%s", req.Username)
+		logger.Errorf(c, "Login 用户不存在 username=%s", req.Username)
 		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
 		return
 	}
-
 	if !service.CheckPassword(req.Password, user.PasswordHash) {
 		logger.Errorf(c, "Login 密码错误 username=%s", req.Username)
 		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
@@ -55,15 +55,71 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	// 令牌存入 Redis
+	Auth.StoreToken(context.Background(), user.ID, token, 24*time.Hour)
+
 	logger.Infof(c, "Login 成功 username=%s", req.Username)
 	response.Success(c, gin.H{
 		"token": token,
-		"user": gin.H{
-			"id":       user.ID,
-			"username": user.Username,
-			"is_admin": user.IsAdmin,
-		},
+		"user":  gin.H{"id": user.ID, "username": user.Username, "is_admin": user.IsAdmin},
 	})
+}
+
+// AdminLogin 管理员登录。
+func AdminLogin(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "请输入用户名和密码")
+		return
+	}
+	if database.DB == nil {
+		logger.Errorf(c, "AdminLogin 数据库未连接")
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
+		return
+	}
+
+	var admin model.Admin
+	if err := database.DB.Where("username = ? AND is_delete = 0", req.Username).First(&admin).Error; err != nil {
+		logger.Errorf(c, "AdminLogin 管理员不存在 username=%s", req.Username)
+		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
+	if admin.Status == 0 {
+		logger.Errorf(c, "AdminLogin 账号已禁用 username=%s", req.Username)
+		response.Error(c, http.StatusForbidden, "账号已被禁用")
+		return
+	}
+	if !service.CheckPassword(req.Password, admin.PasswordHash) {
+		logger.Errorf(c, "AdminLogin 密码错误 username=%s", req.Username)
+		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
+		return
+	}
+
+	token, err := Auth.GenerateToken(admin.ID, admin.Username, true)
+	if err != nil {
+		logger.Errorf(c, "AdminLogin 生成令牌失败: %v", err)
+		response.Error(c, http.StatusInternalServerError, "生成令牌失败")
+		return
+	}
+
+	// 令牌存入 Redis
+	Auth.StoreToken(context.Background(), admin.ID, token, 24*time.Hour)
+
+	logger.Infof(c, "AdminLogin 成功 username=%s", req.Username)
+	response.Success(c, gin.H{
+		"token": token,
+		"user":  gin.H{"id": admin.ID, "username": admin.Username, "real_name": admin.RealName},
+	})
+}
+
+// Logout 退出登录，从 Redis 撤销令牌。
+func Logout(c *gin.Context) {
+	tokenStr, _ := c.Get("token")
+	if tokenStr != nil {
+		Auth.RevokeToken(c.Request.Context(), tokenStr.(string))
+	}
+	logger.Infof(c, "Logout 成功")
+	response.Success(c, nil)
 }
 
 // UserInfo 获取当前登录用户信息（含角色、权限）。
@@ -91,56 +147,5 @@ func UserInfo(c *gin.Context) {
 		"username":    username,
 		"roles":       roles,
 		"permissions": perms,
-	})
-}
-
-// AdminLogin 管理员登录。
-func AdminLogin(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "请输入用户名和密码")
-		return
-	}
-
-	if database.DB == nil {
-		logger.Errorf(c, "AdminLogin 数据库未连接")
-		response.Error(c, http.StatusInternalServerError, "数据库未连接")
-		return
-	}
-
-	var admin model.Admin
-	if err := database.DB.Where("username = ? AND is_delete = 0", req.Username).First(&admin).Error; err != nil {
-		logger.Errorf(c, "AdminLogin 管理员不存在或已删除 username=%s", req.Username)
-		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
-		return
-	}
-
-	if admin.Status == 0 {
-		logger.Errorf(c, "AdminLogin 账号已禁用 username=%s", req.Username)
-		response.Error(c, http.StatusForbidden, "账号已被禁用")
-		return
-	}
-
-	if !service.CheckPassword(req.Password, admin.PasswordHash) {
-		logger.Errorf(c, "AdminLogin 密码错误 username=%s", req.Username)
-		response.Error(c, http.StatusUnauthorized, "用户名或密码错误")
-		return
-	}
-
-	token, err := Auth.GenerateToken(admin.ID, admin.Username, true)
-	if err != nil {
-		logger.Errorf(c, "AdminLogin 生成令牌失败: %v", err)
-		response.Error(c, http.StatusInternalServerError, "生成令牌失败")
-		return
-	}
-
-	logger.Infof(c, "AdminLogin 成功 username=%s", req.Username)
-	response.Success(c, gin.H{
-		"token": token,
-		"user": gin.H{
-			"id":        admin.ID,
-			"username":  admin.Username,
-			"real_name": admin.RealName,
-		},
 	})
 }

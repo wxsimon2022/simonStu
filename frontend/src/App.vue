@@ -1,8 +1,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Management, User, Fold, Expand } from '@element-plus/icons-vue'
-import { removeToken } from './utils/request'
+import { Management, User, Setting, Fold, Expand } from '@element-plus/icons-vue'
+import { api, removeToken } from './utils/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -11,7 +11,8 @@ const sidebarWidth = ref('220px')
 
 const isLoginPage = computed(() => route.path === '/login')
 
-function handleLogout() {
+async function handleLogout() {
+  try { await api("/api/auth/logout", { method: "POST" }) } catch (_) {}
   removeToken()
   router.push('/login')
 }
@@ -40,10 +41,16 @@ function handleLogout() {
           <el-icon><Management /></el-icon>
           <template #title>仪表盘</template>
         </el-menu-item>
-        <el-menu-item index="/user">
-          <el-icon><User /></el-icon>
-          <template #title>用户管理</template>
-        </el-menu-item>
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/admin">管理员管理</el-menu-item>
+          <el-menu-item index="/role">角色管理</el-menu-item>
+          <el-menu-item index="/permission">权限列表</el-menu-item>
+        </el-sub-menu>
+
       </el-menu>
     </el-aside>
 

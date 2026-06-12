@@ -29,7 +29,7 @@ func main() {
 	database.InitMySQL(cfg)
 
 	// 初始化认证服务
-	handler.Auth = service.NewAuthService(cfg.JWTSecret)
+	handler.Auth = service.NewAuthService(cfg.JWTSecret, database.RedisClient)
 
 	r := router.Setup(cfg.Mode)
 

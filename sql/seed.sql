@@ -35,3 +35,44 @@ ON DUPLICATE KEY UPDATE role_id = role_id;
 INSERT INTO c_admin (username, password_hash, real_name, status) VALUES
 ('admin', '$2a$10$gyRC9Lo9BxcKgDr9deqOu.mw2GzIpTNfQOkOPZCxzAJUBZ16LvtYy', '超级管理员', 1)
 ON DUPLICATE KEY UPDATE real_name = VALUES(real_name);
+
+-- 新增系统管理权限
+INSERT IGNORE INTO c_permissions (name, description) VALUES
+('admin:list',   '管理员列表'),
+('admin:create', '创建管理员'),
+('admin:update', '修改管理员'),
+('admin:delete', '删除管理员'),
+('perm:list',    '权限列表');
+
+-- admin 角色获取所有新权限
+INSERT IGNORE INTO c_role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM c_roles r, c_permissions p WHERE r.name = 'admin';
+
+-- 新增权限管理权限
+INSERT IGNORE INTO c_permissions (name, description) VALUES
+('perm:create', '创建权限'),
+('perm:update', '修改权限'),
+('perm:delete', '删除权限');
+
+-- admin 角色获取所有新权限
+INSERT IGNORE INTO c_role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM c_roles r, c_permissions p WHERE r.name = 'admin';
+
+-- =========================================================
+-- 权限树：添加父级权限分组
+-- =========================================================
+INSERT IGNORE INTO c_permissions (name, description) VALUES
+('user', '用户管理'),
+('role', '角色管理'),
+('admin', '管理员管理'),
+('perm', '权限管理');
+
+-- 设置子权限的 parent_id（使用临时表绕过 MySQL 限制）
+UPDATE c_permissions SET parent_id = (SELECT id FROM (SELECT id FROM c_permissions WHERE name = 'user') AS tmp) WHERE name IN ('user:list','user:create','user:update','user:delete');
+UPDATE c_permissions SET parent_id = (SELECT id FROM (SELECT id FROM c_permissions WHERE name = 'role') AS tmp) WHERE name IN ('role:list','role:create','role:update','role:delete');
+UPDATE c_permissions SET parent_id = (SELECT id FROM (SELECT id FROM c_permissions WHERE name = 'admin') AS tmp) WHERE name IN ('admin:list','admin:create','admin:update','admin:delete');
+UPDATE c_permissions SET parent_id = (SELECT id FROM (SELECT id FROM c_permissions WHERE name = 'perm') AS tmp) WHERE name LIKE 'perm:%';
+
+-- admin 角色获取所有权限（含新加的父级权限）
+INSERT IGNORE INTO c_role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM c_roles r, c_permissions p WHERE r.name = 'admin';
