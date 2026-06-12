@@ -1,3 +1,4 @@
+// 路由注册。组装所有中间件和 handler，暴露 Setup 函数给 main 调用。
 package router
 
 import (
@@ -7,16 +8,13 @@ import (
 	"github.com/wxsimon8888/simonStu/internal/middleware"
 )
 
-// Setup 配置所有路由并返回 Engine
+// Setup 配置所有路由并返回 *gin.Engine。
 func Setup(mode string) *gin.Engine {
 	gin.SetMode(mode)
 
 	r := gin.Default()
-
-	// 全局中间件
 	r.Use(middleware.CORS())
 
-	// 路由组
 	api := r.Group("/api")
 	{
 		api.GET("/hello", handler.Hello)
@@ -29,7 +27,6 @@ func Setup(mode string) *gin.Engine {
 		api.GET("/user", handler.UserList)
 		api.PUT("/user", handler.UserUpdate)
 
-		// 并发编程示例
 		api.POST("/concurrent/process", handler.ConcurrentProcess)
 		api.GET("/concurrent/fetch", handler.ConcurrentMultiFetch)
 	}

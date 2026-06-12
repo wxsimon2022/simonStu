@@ -1,3 +1,4 @@
+// 用户仓储。复用 BaseRepo 的通用 CRUD，可在此扩展用户专属查询方法。
 package repository
 
 import (
@@ -5,8 +6,8 @@ import (
 	"github.com/wxsimon8888/simonStu/internal/model"
 )
 
-// 全局用户仓储实例
+// UserRepo 用户 CRUD 实例。
 var UserRepo = NewBaseRepo[model.Users](database.DB)
 
-// 还可以在这里加用户专属的查询方法
+// 扩展示例：
 // func FindByUsername(db *gorm.DB, username string) (*model.Users, error) { ... }

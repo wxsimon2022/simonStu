@@ -1,3 +1,4 @@
+// 应用入口。初始化配置、日志、数据库后启动 HTTP 服务。
 package main
 
 import (
@@ -13,12 +14,9 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// 初始化日志
 	logger.Init(cfg.LogDir)
 
-	// 初始化 Redis
 	database.InitRedis(cfg)
-	// 初始化 MySQL
 	database.InitMySQL(cfg)
 
 	r := router.Setup(cfg.Mode)
