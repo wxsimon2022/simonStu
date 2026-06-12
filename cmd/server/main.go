@@ -13,7 +13,7 @@ import (
 func main() {
 	cfg := config.Load()
 
-	// 初始化日志（会按 LOG_DIR 创建目录和文件）
+	// 初始化日志
 	logger.Init(cfg.LogDir)
 
 	// 初始化 Redis
@@ -24,8 +24,8 @@ func main() {
 	r := router.Setup(cfg.Mode)
 
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("服务启动在 %s", addr)
+	log.Printf("HTTP 服务启动在 %s", addr)
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+		log.Fatalf("HTTP 服务启动失败: %v", err)
 	}
 }

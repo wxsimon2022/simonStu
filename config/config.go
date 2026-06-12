@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	LogDir string
 	Port string
 	Mode string
+
+	LogDir string
 
 	RedisHost     string
 	RedisPort     string
@@ -34,6 +35,8 @@ func Load() *Config {
 		Port: getEnv("PORT", "8080"),
 		Mode: getEnv("GIN_MODE", "debug"),
 
+		LogDir: getEnv("LOG_DIR", "storage/logs"),
+
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
@@ -44,8 +47,6 @@ func Load() *Config {
 		DBUser:     getEnv("DB_USER", "root"),
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBName:     getEnv("DB_NAME", "test"),
-
-		LogDir: getEnv("LOG_DIR", "storage/logs"),
 	}
 }
 
