@@ -31,6 +31,7 @@ import (
 //	POST   /permission      创建菜单/权限（需 perm:create 权限）
 //	PUT    /permission      修改菜单/权限（需 perm:update 权限）
 //	DELETE /permission/:id  软删除菜单/权限（需 perm:delete 权限）
+//	PUT    /permission/reorder  批量更新菜单排序（需 perm:update 权限）
 //
 // 菜单导航：
 //
@@ -67,6 +68,8 @@ func RegisterSystemRoutes(auth *gin.RouterGroup) {
 	auth.PUT("/permission", middleware.PermissionRequired("perm:update"), handler.SystemPermissionUpdate)
 	// DELETE /permission/:id — 软删除菜单
 	auth.DELETE("/permission/:id", middleware.PermissionRequired("perm:delete"), handler.SystemPermissionDelete)
+	// PUT /permission/reorder — 批量更新菜单排序
+	auth.PUT("/permission/reorder", middleware.PermissionRequired("perm:update"), handler.SystemPermissionReorder)
 	// GET /menus — 当前用户的菜单树（侧边栏导航，无额外权限校验）
 	auth.GET("/menus", handler.SystemMenuList)
 }

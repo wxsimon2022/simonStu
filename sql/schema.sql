@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS c_permissions (
   type        VARCHAR(16)   NOT NULL DEFAULT 'menu' COMMENT 'dir=目录 menu=菜单 btn=按钮',
   icon        VARCHAR(64)   DEFAULT '' COMMENT 'Element Plus 图标名，如 User / Setting / Management',
   parent_id   INT           DEFAULT NULL COMMENT '父权限 ID',
+  sort_order  INT           NOT NULL DEFAULT 0 COMMENT '排序序号，同级按此升序排列',
   is_delete   TINYINT       NOT NULL DEFAULT 0 COMMENT '0=正常 1=删除',
   create_time DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_time DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -70,3 +71,5 @@ CREATE TABLE IF NOT EXISTS c_role_permissions (
   update_time    DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_role_perm (role_id, permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限关联表';
+
+-- 已有数据库迁移：ALTER TABLE c_permissions ADD COLUMN sort_order INT NOT NULL DEFAULT 0 COMMENT '排序序号' AFTER icon;

@@ -4,6 +4,7 @@ package model
 type Permission struct {
 	BaseModel
 	Name        string `gorm:"column:name;type:varchar(128);not null;uniqueIndex" json:"name"`
+	SortOrder   int    `gorm:"column:sort_order;type:int;not null;default:0" json:"sort_order"`
 	Description string `gorm:"column:description;type:varchar(255);default:''" json:"description"`
 	Type        string `gorm:"column:type;type:varchar(16);default:'menu'" json:"type"`
 	ParentID    *int   `gorm:"column:parent_id" json:"parent_id"`

@@ -506,6 +506,44 @@ func SystemPermissionDelete(c *gin.Context) {
 	response.Success(c, nil)
 }
 
+// SystemPermissionReorder 批量更新权限排序（拖拽后调用）
+func SystemPermissionReorder(c *gin.Context) {
+	if database.DB == nil {
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
+		return
+	}
+	var req struct {
+		Items []struct {
+			ID        int  `json:"id"`
+			ParentID  *int `json:"parent_id"`
+			SortOrder int  `json:"sort_order"`
+		} `json:"items" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+	tx := database.DB.Begin()
+	for _, item := range req.Items {
+		if err := tx.Model(&model.Permission{}).Where("id = ?", item.ID).Updates(map[string]interface{}{
+			"parent_id":   item.ParentID,
+			"sort_order":  item.SortOrder,
+			"update_time": time.Now(),
+		}).Error; err != nil {
+			tx.Rollback()
+			logger.Errorf(c, "SystemPermissionReorder 更新失败 id=%d err=%v", item.ID, err)
+			response.Error(c, http.StatusInternalServerError, "排序更新失败")
+			return
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		response.Error(c, http.StatusInternalServerError, "排序更新失败")
+		return
+	}
+	logger.Infof(c, "SystemPermissionReorder 成功 items=%d", len(req.Items))
+	response.Success(c, nil)
+}
+
 // SystemPermissionList 权限树（同时返回平铺列表供角色编辑使用）
 func SystemPermissionList(c *gin.Context) {
 	if database.DB == nil {
@@ -513,7 +551,7 @@ func SystemPermissionList(c *gin.Context) {
 		return
 	}
 	var flat []model.Permission
-	database.DB.Where("is_delete = 0").Order("id ASC").Find(&flat)
+	database.DB.Where("is_delete = 0").Order("sort_order ASC, id ASC").Find(&flat)
 
 	// 按 parent_id 分组
 	group := map[int][]PermissionTreeItem{}
@@ -566,7 +604,7 @@ func SystemMenuList(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var perms []model.Permission
-	query := database.DB.Where("type IN ('dir', 'menu', 'btn') AND is_delete = 0").Order("id ASC")
+	query := database.DB.Where("type IN ('dir', 'menu', 'btn') AND is_delete = 0").Order("sort_order ASC, id ASC")
 	if !isAdmin.(bool) {
 		query = query.Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
 			Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
