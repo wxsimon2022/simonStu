@@ -35,6 +35,7 @@ func RegisterPublicRoutes(api *gin.RouterGroup) {
 	// ———— Dubbo 服务调用（通过 Nacos 发现 Java 服务）————
 	api.GET("/dubbo/services", dubboHandler.NacosServices)
 	api.GET("/dubbo/hello", dubboHandler.SayHello)
+	api.GET("/dubbo/sayGoodBye", dubboHandler.SayGoodBye)
 
 	api.GET("/test", handler.Test)
 }

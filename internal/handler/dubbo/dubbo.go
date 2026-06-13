@@ -91,3 +91,27 @@ func SayHello(c *gin.Context) {
 		"message": msg,
 	})
 }
+
+func SayGoodBye(c *gin.Context) {
+
+	name := c.DefaultQuery("name", "World")
+
+	if dubboSvc.DemoSvc == nil {
+		logger.Errorf(c, "SayHello Dubbo 服务未初始化")
+		response.Error(c, http.StatusServiceUnavailable, "Dubbo 服务未初始化")
+		return
+	}
+
+	// 通过 dubbo-go 代理调用 Java 端的 sayHello 方法
+	msg, err := dubboSvc.DemoSvc.SayGoodBye(c.Request.Context(), name)
+	if err != nil {
+		logger.Errorf(c, "SayHello Dubbo 调用失败 err=%v", err)
+		response.Error(c, http.StatusBadGateway, "调用 Dubbo 服务失败: "+err.Error())
+		return
+	}
+
+	logger.Infof(c, "SayHello 成功 name=%s msg=%s", name, msg)
+	response.Success(c, gin.H{
+		"message": msg,
+	})
+}

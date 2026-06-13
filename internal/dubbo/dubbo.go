@@ -22,7 +22,8 @@ import (
 // =========================================================================
 
 type DemoService struct {
-	SayHello func(ctx context.Context, name string) (string, error)
+	SayHello   func(ctx context.Context, name string) (string, error)
+	SayGoodBye func(ctx context.Context, name string) (string, error)
 }
 
 var DemoSvc *DemoService
