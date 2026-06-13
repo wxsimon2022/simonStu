@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/database"
 )
 
 // CacheTimeouts 缓存过期时长，按场景区分。

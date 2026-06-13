@@ -4,8 +4,8 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/handler"
-	"github.com/wxsimon8888/simonStu/internal/middleware"
+	"github.com/wxsimon2022/simonStu/internal/handler"
+	"github.com/wxsimon2022/simonStu/internal/middleware"
 )
 
 // RegisterSystemRoutes 注册系统管理相关路由，每个路由通过 PermissionRequired 绑定权限标识。

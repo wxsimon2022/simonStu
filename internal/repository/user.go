@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/model"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/model"
 )
 
 // UserRepo 用户 CRUD 实例。

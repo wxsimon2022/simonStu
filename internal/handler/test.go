@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/model"
-	"github.com/wxsimon8888/simonStu/internal/repository"
-	"github.com/wxsimon8888/simonStu/internal/response"
-	"github.com/wxsimon8888/simonStu/internal/util"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/model"
+	"github.com/wxsimon2022/simonStu/internal/repository"
+	"github.com/wxsimon2022/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/util"
 )
 
 // Test 综合示例：查询 model rows 并演示 Redis 缓存的完整流程。

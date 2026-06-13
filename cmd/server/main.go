@@ -5,14 +5,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/wxsimon8888/simonStu/config"
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/dubbo"
-	"github.com/wxsimon8888/simonStu/internal/handler"
-	"github.com/wxsimon8888/simonStu/internal/logger"
-	"github.com/wxsimon8888/simonStu/internal/nacos"
-	"github.com/wxsimon8888/simonStu/internal/router"
-	"github.com/wxsimon8888/simonStu/internal/service"
+	"github.com/wxsimon2022/simonStu/config"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/dubbo"
+	"github.com/wxsimon2022/simonStu/internal/handler"
+	"github.com/wxsimon2022/simonStu/internal/logger"
+	"github.com/wxsimon2022/simonStu/internal/nacos"
+	"github.com/wxsimon2022/simonStu/internal/router"
+	"github.com/wxsimon2022/simonStu/internal/service"
 )
 
 func main() {

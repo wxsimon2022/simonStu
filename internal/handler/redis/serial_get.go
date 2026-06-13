@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/logger"
-	"github.com/wxsimon8888/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/logger"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // RedisMultiGetOneByOne 串行查询 Redis 的多个 key。

@@ -3,11 +3,11 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/handler"
-	dubboHandler "github.com/wxsimon8888/simonStu/internal/handler/dubbo"
-	"github.com/wxsimon8888/simonStu/internal/handler/httpcall"
-	"github.com/wxsimon8888/simonStu/internal/handler/redis"
-	"github.com/wxsimon8888/simonStu/internal/handler/upload"
+	"github.com/wxsimon2022/simonStu/internal/handler"
+	dubboHandler "github.com/wxsimon2022/simonStu/internal/handler/dubbo"
+	"github.com/wxsimon2022/simonStu/internal/handler/httpcall"
+	"github.com/wxsimon2022/simonStu/internal/handler/redis"
+	"github.com/wxsimon2022/simonStu/internal/handler/upload"
 )
 
 func RegisterPublicRoutes(api *gin.RouterGroup) {

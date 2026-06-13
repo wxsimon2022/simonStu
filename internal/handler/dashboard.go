@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // DashboardStats 返回仪表盘统计数据（管理员/角色/权限总量）。

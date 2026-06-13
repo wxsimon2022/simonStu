@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/logger"
-	"github.com/wxsimon8888/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/logger"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // RedisMultiGet 并发批量查询 Redis 的多个 key。同时展示两种并发模式：

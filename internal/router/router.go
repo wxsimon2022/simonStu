@@ -7,8 +7,8 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/handler"
-	"github.com/wxsimon8888/simonStu/internal/middleware"
+	"github.com/wxsimon2022/simonStu/internal/handler"
+	"github.com/wxsimon2022/simonStu/internal/middleware"
 )
 
 // Setup 创建 Gin 引擎实例，注册全局中间件和全部路由分组。

@@ -7,7 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/wxsimon8888/simonStu/config"
+	"github.com/wxsimon2022/simonStu/config"
 )
 
 // RedisClient 全局 Redis 客户端。包外部通过 database.RedisClient 直接使用。

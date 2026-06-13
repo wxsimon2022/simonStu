@@ -11,7 +11,7 @@ import (
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 
-	"github.com/wxsimon8888/simonStu/internal/nacos"
+	"github.com/wxsimon2022/simonStu/internal/nacos"
 )
 
 // =========================================================================

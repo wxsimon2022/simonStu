@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/database"
-	"github.com/wxsimon8888/simonStu/internal/logger"
-	"github.com/wxsimon8888/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/database"
+	"github.com/wxsimon2022/simonStu/internal/logger"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // RedisMultiSet 并发批量写入 Redis。

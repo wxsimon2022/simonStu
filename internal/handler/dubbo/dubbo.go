@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	dubboSvc "github.com/wxsimon8888/simonStu/internal/dubbo"
-	"github.com/wxsimon8888/simonStu/internal/logger"
-	"github.com/wxsimon8888/simonStu/internal/nacos"
-	"github.com/wxsimon8888/simonStu/internal/response"
+	dubboSvc "github.com/wxsimon2022/simonStu/internal/dubbo"
+	"github.com/wxsimon2022/simonStu/internal/logger"
+	"github.com/wxsimon2022/simonStu/internal/nacos"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // =========================================================================

@@ -1,4 +1,4 @@
-module github.com/wxsimon8888/simonStu
+module github.com/wxsimon2022/simonStu
 
 go 1.25.0
 
@@ -9,6 +9,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.7
 	github.com/redis/go-redis/v9 v9.7.0
+	github.com/wxsimon2022/nacoswrap v0.0.0-20260613143240-5d7f905457a3
 	golang.org/x/crypto v0.49.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12

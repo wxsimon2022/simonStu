@@ -8,7 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"github.com/wxsimon8888/simonStu/config"
+	"github.com/wxsimon2022/simonStu/config"
 )
 
 // DB 全局 GORM 实例。包外部通过 database.DB 直接使用。

@@ -4,7 +4,7 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/wxsimon8888/simonStu/internal/response"
+	"github.com/wxsimon2022/simonStu/internal/response"
 )
 
 // Hello 返回基础问候信息。
