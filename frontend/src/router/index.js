@@ -3,6 +3,7 @@ import Login from '../views/Login.vue'
 import SystemAdmin from '../views/SystemAdmin.vue'
 import SystemRole from '../views/SystemRole.vue'
 import SystemPermission from '../views/SystemPermission.vue'
+import Profile from '../views/Profile.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login },
@@ -10,6 +11,7 @@ const routes = [
   { path: '/admin', name: 'SystemAdmin', component: SystemAdmin, meta: { requiresAuth: true } },
   { path: '/role', name: 'SystemRole', component: SystemRole, meta: { requiresAuth: true } },
   { path: '/permission', name: 'SystemPermission', component: SystemPermission, meta: { requiresAuth: true } },
+  { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({

@@ -659,3 +659,82 @@ func SystemMenuList(c *gin.Context) {
 
 	response.Success(c, gin.H{"menus": tree})
 }
+
+// SystemAdminProfile 获取当前管理员个人信息
+func SystemAdminProfile(c *gin.Context) {
+	if database.DB == nil {
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
+		return
+	}
+	userID, _ := c.Get("user_id")
+
+	var admin model.Admin
+	if err := database.DB.Where("id = ? AND is_delete = 0", userID).First(&admin).Error; err != nil {
+		logger.Errorf(c, "SystemAdminProfile 查询失败 user_id=%d err=%v", userID, err)
+		response.Error(c, http.StatusNotFound, "管理员不存在")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"id":          admin.ID,
+		"username":    admin.Username,
+		"real_name":   admin.RealName,
+		"phone":       admin.Phone,
+		"email":       admin.Email,
+		"status":      admin.Status,
+		"create_time": admin.CreateTime.Format("2006-01-02 15:04:05"),
+	})
+}
+
+// SystemAdminProfileUpdate 当前管理员修改个人信息
+func SystemAdminProfileUpdate(c *gin.Context) {
+	if database.DB == nil {
+		response.Error(c, http.StatusInternalServerError, "数据库未连接")
+		return
+	}
+	userID, _ := c.Get("user_id")
+
+	var req struct {
+		RealName string `json:"real_name"`
+		Phone    string `json:"phone"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if req.RealName != "" {
+		updates["real_name"] = req.RealName
+	}
+	if req.Phone != "" {
+		updates["phone"] = req.Phone
+	}
+	if req.Email != "" {
+		updates["email"] = req.Email
+	}
+	if req.Password != "" {
+		hash, err := service.HashPassword(req.Password)
+		if err != nil {
+			logger.Errorf(c, "SystemAdminProfileUpdate 密码哈希失败: %v", err)
+			response.Error(c, http.StatusInternalServerError, "密码加密失败")
+			return
+		}
+		updates["password_hash"] = hash
+	}
+	if len(updates) == 0 {
+		response.Error(c, http.StatusBadRequest, "没有可更新的字段")
+		return
+	}
+	updates["update_time"] = time.Now()
+	if err := database.DB.Model(&model.Admin{}).Where("id = ? AND is_delete = 0", userID).Updates(updates).Error; err != nil {
+		logger.Errorf(c, "SystemAdminProfileUpdate 失败 user_id=%d err=%v", userID, err)
+		response.Error(c, http.StatusInternalServerError, "更新失败")
+		return
+	}
+
+	logger.Infof(c, "SystemAdminProfileUpdate 成功 user_id=%d", userID)
+	response.Success(c, nil)
+}

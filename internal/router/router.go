@@ -43,6 +43,10 @@ func Setup(mode string) *gin.Engine {
 			auth.GET("/auth/userinfo", handler.UserInfo)
 			// POST /auth/logout — 退出登录（从 Redis 吊销令牌）
 			auth.POST("/auth/logout", handler.Logout)
+			// GET /auth/profile — 获取当前管理员个人信息
+			auth.GET("/auth/profile", handler.SystemAdminProfile)
+			// PUT /auth/profile — 修改当前管理员个人信息
+			auth.PUT("/auth/profile", handler.SystemAdminProfileUpdate)
 
 			// PUT /user — 修改普通用户信息（需 user:update 权限）
 			auth.PUT("/user", middleware.PermissionRequired("user:update"), handler.UserUpdate)

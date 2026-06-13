@@ -26,10 +26,14 @@ function getIcon(name) {
   return name && ElementPlusIconsVue[name] ? ElementPlusIconsVue[name] : Menu
 }
 
-async function handleLogout() {
-  try { await api('/api/auth/logout', { method: 'POST' }) } catch (_) {}
-  removeToken()
-  router.push('/login')
+async function handleCommand(cmd) {
+  if (cmd === 'logout') {
+    try { await api('/api/auth/logout', { method: 'POST' }) } catch (_) {}
+    removeToken()
+    router.push('/login')
+  } else if (cmd === 'profile') {
+    router.push('/profile')
+  }
 }
 </script>
 
@@ -81,11 +85,12 @@ async function handleLogout() {
             <component :is="isCollapse ? Expand : Fold" />
           </el-icon>
         </el-button>
-        <el-dropdown @command="handleLogout">
+        <el-dropdown @command="handleCommand">
           <span class="cursor-pointer text-sm">管理员</span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>

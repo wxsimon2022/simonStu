@@ -10,6 +10,7 @@ const treeData = ref([])
 const loading = ref(false)
 const selectedNode = ref(null)
 const filterText = ref('')
+const expandedKeys = ref([])
 const createVisible = ref(false)
 const editVisible = ref(false)
 const contextMenu = ref({ visible: false, x: 0, y: 0 })
@@ -89,7 +90,7 @@ function filterNode(value, data, node) {
   if (matched && treeRef.value) {
     let parent = node?.parent
     while (parent && parent.key !== undefined) {
-      parent.expand()
+      expandedKeys.value.push(parent.key)
       parent = parent.parent
     }
   }
@@ -97,19 +98,18 @@ function filterNode(value, data, node) {
 }
 
 function setExpand(expand) {
-  if (!treeRef.value) return
   if (expand) {
-    const allKeys = []
+    const keys = []
     function walk(nodes) {
       for (const n of nodes) {
-        allKeys.push(n.id)
+        keys.push(n.id)
         if (n.children?.length) walk(n.children)
       }
     }
     walk(treeData.value)
-    treeRef.value.setExpandedKeys(allKeys)
+    expandedKeys.value = keys
   } else {
-    treeRef.value.setExpandedKeys([])
+    expandedKeys.value = []
   }
 }
 
@@ -327,6 +327,7 @@ async function handleDelete() {
       :filter-node-method="filterNode"
       node-key="id"
       highlight-current
+      v-model:expanded-keys="expandedKeys"
       draggable
       :allow-drop="allowDrop"
       @node-drop="handleDrop"
