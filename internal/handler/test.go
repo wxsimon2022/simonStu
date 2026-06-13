@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 	"github.com/wxsimon8888/simonStu/internal/database"
 	"github.com/wxsimon8888/simonStu/internal/model"
@@ -44,10 +46,42 @@ func Test(c *gin.Context) {
 		})
 	}
 
+	var idList []int64
+	database.DB.Table("c_admin").Select("id").Where("is_delete = 0").Pluck("id", &idList)
+
+	var idArray []int
+	for _, v := range modelRows {
+		idArray = append(idArray, v.ID)
+	}
+
+	// Redis 存数据示例
+	ctx := context.Background()
+	redisKey := "test:hello"
+	redisVal := "Hello Redis!"
+	_ = database.RedisClient.Set(ctx, redisKey, redisVal, 0).Err()
+
+	cached, _ := database.RedisClient.Get(ctx, redisKey).Result()
+
+	// Redis 存储结构体示例（序列化为 JSON）
+	_ = database.RedisClient.Set(ctx, "test:user:1", `{"id":1,"username":"admin"}`, 0).Err()
+	userCached, _ := database.RedisClient.Get(ctx, "test:user:1").Result()
+
+	redisCountKey := "redis:count"
+	_ = database.RedisClient.Incr(ctx, redisCountKey).Err()
+
+	//获取count
+	redisCount, _ := database.RedisClient.Get(ctx, redisCountKey).Int64()
+
 	response.Success(c, gin.H{
-		"id":         req.ID,
-		"total":      total,
-		"list":       rows,
-		"model_list": modelList,
+		"id":          req.ID,
+		"total":       total,
+		"list":        rows,
+		"model_list":  modelList,
+		"idList":      idList,
+		"idArray":     idArray,
+		"redis_key":   redisKey,
+		"redis_value": cached,
+		"redis_user":  userCached,
+		"redisCount":  redisCount,
 	})
 }
