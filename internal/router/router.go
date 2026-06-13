@@ -47,6 +47,8 @@ func Setup(mode string) *gin.Engine {
 			auth.GET("/auth/profile", handler.SystemAdminProfile)
 			// PUT /auth/profile — 修改当前管理员个人信息
 			auth.PUT("/auth/profile", handler.SystemAdminProfileUpdate)
+			// GET /dashboard/stats — 仪表盘统计数据
+			auth.GET("/dashboard/stats", handler.DashboardStats)
 
 			// PUT /user — 修改普通用户信息（需 user:update 权限）
 			auth.PUT("/user", middleware.PermissionRequired("user:update"), handler.UserUpdate)

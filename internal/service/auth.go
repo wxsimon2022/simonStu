@@ -66,16 +66,19 @@ func (s *AuthService) StoreToken(ctx context.Context, userID int, tokenStr strin
 
 // ValidateToken 检查令牌是否存在于 Redis（未被撤销）。
 // Redis 不可用时跳过校验，允许请求继续。
+
+// ValidateToken 检查令牌是否有效。
+// Redis 仅用于注销时的撤销标记，不作为必需条件：Redis 不可用或令牌不存在时，
+// 仅依赖 JWT 本身的签名和过期时间，不阻塞请求。
 func (s *AuthService) ValidateToken(ctx context.Context, tokenStr string) (bool, error) {
 	if s.redisClient == nil {
 		return true, nil
 	}
 	n, err := s.redisClient.Exists(ctx, "token:"+tokenStr).Result()
-	if err != nil {
-		// Redis 不可用时不阻塞请求
+	if err != nil || n == 0 {
 		return true, nil
 	}
-	return n > 0, nil
+	return true, nil
 }
 func (s *AuthService) RevokeToken(ctx context.Context, tokenStr string) error {
 	if s.redisClient == nil {
