@@ -105,6 +105,18 @@ func AdminLogin(c *gin.Context) {
 	// 令牌存入 Redis
 	Auth.StoreToken(context.Background(), admin.ID, token, 24*time.Hour)
 
+	// 缓存当前用户权限到 Redis，后续权限校验优先走缓存
+	var permList []string
+	database.DB.Table("c_permissions").
+		Select("DISTINCT c_permissions.name").
+		Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
+		Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
+		Where("c_admin_roles.user_id = ? AND c_permissions.is_delete = 0 AND c_role_permissions.is_delete = 0 AND c_admin_roles.is_delete = 0", admin.ID).
+		Pluck("c_permissions.name", &permList)
+	if len(permList) > 0 {
+		Auth.CachePermissions(context.Background(), admin.ID, permList, 24*time.Hour)
+	}
+
 	logger.Infof(c, "AdminLogin 成功 username=%s", req.Username)
 	response.Success(c, gin.H{
 		"token": token,

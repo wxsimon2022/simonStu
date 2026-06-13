@@ -4,6 +4,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -47,6 +48,7 @@ func AuthRequired() gin.HandlerFunc {
 }
 
 // PermissionRequired 校验当前用户是否拥有指定权限（管理员跳过）。
+// PermissionRequired 校验当前用户是否拥有指定权限（管理员跳过，优先走 Redis 缓存）。
 func PermissionRequired(perm string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		isAdmin, _ := c.Get("is_admin")
@@ -56,18 +58,40 @@ func PermissionRequired(perm string) gin.HandlerFunc {
 		}
 
 		userID, _ := c.Get("user_id")
-		var count int64
-		database.DB.Table("c_admin_roles").
-			Joins("JOIN c_role_permissions ON c_admin_roles.role_id = c_role_permissions.role_id").
-			Joins("JOIN c_permissions ON c_role_permissions.permission_id = c_permissions.id").
-			Where("c_admin_roles.user_id = ? AND c_permissions.name = ? AND c_permissions.is_delete = 0", userID, perm).
-			Count(&count)
+		uid := userID.(int)
 
-		if count == 0 {
-			response.Error(c, http.StatusForbidden, "无权限")
-			c.Abort()
+		// 1. 优先从 Redis 缓存校验
+		cached, err := handler.Auth.HasPermissionCache(c.Request.Context(), uid)
+		if err == nil && cached {
+			has, _ := handler.Auth.HasCachedPermission(c.Request.Context(), uid, perm)
+			if has {
+				c.Next()
+			} else {
+				response.Error(c, http.StatusForbidden, "无权限")
+				c.Abort()
+			}
 			return
 		}
-		c.Next()
+
+		// 2. 缓存未命中，回查数据库并缓存
+		var perms []string
+		database.DB.Table("c_permissions").
+			Select("DISTINCT c_permissions.name").
+			Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
+			Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
+			Where("c_admin_roles.user_id = ? AND c_permissions.is_delete = 0 AND c_role_permissions.is_delete = 0 AND c_admin_roles.is_delete = 0", uid).
+			Pluck("c_permissions.name", &perms)
+
+		// 缓存到 Redis（即使无权限也缓存空集合，避免每次回查 DB）
+		handler.Auth.CachePermissions(c.Request.Context(), uid, perms, 24*time.Hour)
+
+		for _, p := range perms {
+			if p == perm {
+				c.Next()
+				return
+			}
+		}
+		response.Error(c, http.StatusForbidden, "无权限")
+		c.Abort()
 	}
 }

@@ -91,3 +91,75 @@ func HashPassword(password string) (string, error) {
 func CheckPassword(password, hash string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
+
+// ======================== 权限缓存 ========================
+
+// CachePermissions 将用户权限列表存入 Redis Set，TTL 与令牌一致。
+func (s *AuthService) CachePermissions(ctx context.Context, userID int, permissions []string, ttl time.Duration) error {
+	if s.redisClient == nil {
+		return nil
+	}
+	key := fmt.Sprintf("perms:user:%d", userID)
+	if len(permissions) == 0 {
+		s.redisClient.Del(ctx, key)
+		return nil
+	}
+	pipe := s.redisClient.Pipeline()
+	pipe.Del(ctx, key) // 先删除再重新添加，确保原子性
+	anyPerms := make([]interface{}, len(permissions))
+	for i, p := range permissions {
+		anyPerms[i] = p
+	}
+	pipe.SAdd(ctx, key, anyPerms...)
+	pipe.Expire(ctx, key, ttl)
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+// GetCachedPermissions 从 Redis 获取用户权限列表。
+func (s *AuthService) GetCachedPermissions(ctx context.Context, userID int) ([]string, error) {
+	if s.redisClient == nil {
+		return nil, nil
+	}
+	return s.redisClient.SMembers(ctx, fmt.Sprintf("perms:user:%d", userID)).Result()
+}
+
+// HasCachedPermission 检查 Redis 中用户是否拥有指定权限。
+func (s *AuthService) HasCachedPermission(ctx context.Context, userID int, perm string) (bool, error) {
+	if s.redisClient == nil {
+		return false, nil
+	}
+	return s.redisClient.SIsMember(ctx, fmt.Sprintf("perms:user:%d", userID), perm).Result()
+}
+
+// ClearPermissionsCache 清除指定用户的权限缓存。
+func (s *AuthService) ClearPermissionsCache(ctx context.Context, userID int) error {
+	if s.redisClient == nil {
+		return nil
+	}
+	return s.redisClient.Del(ctx, fmt.Sprintf("perms:user:%d", userID)).Err()
+}
+
+// ClearAllPermissionsCache 清除所有用户的权限缓存（角色或权限更新时调用）。
+func (s *AuthService) ClearAllPermissionsCache(ctx context.Context) error {
+	if s.redisClient == nil {
+		return nil
+	}
+	keys, err := s.redisClient.Keys(ctx, "perms:user:*").Result()
+	if err != nil {
+		return err
+	}
+	if len(keys) > 0 {
+		return s.redisClient.Del(ctx, keys...).Err()
+	}
+	return nil
+}
+
+// HasPermissionCache 检查用户权限缓存是否存在。
+func (s *AuthService) HasPermissionCache(ctx context.Context, userID int) (bool, error) {
+	if s.redisClient == nil {
+		return false, nil
+	}
+	n, err := s.redisClient.Exists(ctx, fmt.Sprintf("perms:user:%d", userID)).Result()
+	return n > 0, err
+}

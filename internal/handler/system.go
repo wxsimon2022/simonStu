@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -204,6 +205,7 @@ func SystemAdminUpdate(c *gin.Context) {
 		database.DB.Where("user_id = ?", req.ID).Delete(&model.AdminRole{})
 		for _, roleID := range *req.RoleIDs {
 			database.DB.Create(&model.AdminRole{UserID: req.ID, RoleID: roleID})
+			Auth.ClearPermissionsCache(context.Background(), req.ID)
 		}
 	}
 	logger.Infof(c, "SystemAdminUpdate 成功 id=%d", req.ID)
@@ -298,6 +300,7 @@ func SystemRoleUpdate(c *gin.Context) {
 		for _, pid := range req.PermissionIDs {
 			database.DB.Create(&model.RolePermission{RoleID: req.ID, PermissionID: pid})
 		}
+		Auth.ClearAllPermissionsCache(context.Background())
 	}
 	logger.Infof(c, "SystemRoleUpdate 成功 id=%d", req.ID)
 	response.Success(c, nil)
@@ -379,6 +382,7 @@ func SystemRolePermissions(c *gin.Context) {
 		logger.Errorf(c, "SystemRolePermissions 更新失败 role_id=%d err=%v", req.RoleID, err)
 		response.Error(c, http.StatusInternalServerError, "更新失败")
 		return
+		Auth.ClearAllPermissionsCache(context.Background())
 	}
 	logger.Infof(c, "SystemRolePermissions 更新成功 role_id=%d", req.RoleID)
 	response.Success(c, nil)
