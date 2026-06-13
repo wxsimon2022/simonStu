@@ -67,10 +67,7 @@ func Test(c *gin.Context) {
 	userCached, _ := database.RedisClient.Get(ctx, "test:user:1").Result()
 
 	redisCountKey := "redis:count"
-	_ = database.RedisClient.Incr(ctx, redisCountKey).Err()
-
-	//获取count
-	redisCount, _ := database.RedisClient.Get(ctx, redisCountKey).Int64()
+	redisCount, _ := database.RedisClient.Incr(ctx, redisCountKey).Result()
 
 	response.Success(c, gin.H{
 		"id":          req.ID,
