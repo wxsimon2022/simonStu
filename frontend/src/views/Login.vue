@@ -16,7 +16,7 @@ async function handleLogin() {
   }
   loading.value = true
   try {
-    const res = await api('/api/auth/admin/login', {
+    const res = await api('/commonApi/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({ username: username.value, password: password.value }),
     })

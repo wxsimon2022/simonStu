@@ -28,12 +28,20 @@ import (
 func Setup(mode string) *gin.Engine {
 	gin.SetMode(mode)
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 	r.Use(middleware.CORS())
 
+	// 公共接口（无需登录）
+	commonApi := r.Group("/commonApi")
+	RegisterPublicRoutes(commonApi)
+
+	// 需登录接口（保持 /api 前缀）
 	api := r.Group("/api")
 	{
-		// 公开路由组：无需登录即可访问
-		RegisterPublicRoutes(api)
+		// POST /auth/login — 普通用户登录
+		api.POST("/auth/login", handler.Login)
+		// POST /auth/admin/login — 管理后台管理员登录
+		api.POST("/auth/admin/login", handler.AdminLogin)
 
 		// 认证路由组：需携带有效 JWT 令牌
 		auth := api.Group("")
@@ -59,11 +67,5 @@ func Setup(mode string) *gin.Engine {
 		}
 	}
 
-	// 生产环境前端静态文件（单镜像部署）
-	r.Static("/assets", "./frontend/dist/assets")
-	r.StaticFile("/favicon.ico", "./frontend/dist/favicon.ico")
-	r.NoRoute(func(c *gin.Context) {
-		c.File("./frontend/dist/index.html")
-	})
 	return r
 }

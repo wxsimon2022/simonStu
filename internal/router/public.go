@@ -21,10 +21,7 @@ import (
 //	POST /concurrent/process    并发任务处理示例
 //	GET  /concurrent/fetch      并发多源数据抓取示例
 func RegisterPublicRoutes(api *gin.RouterGroup) {
-	// POST /auth/login — 普通用户登录
-	api.POST("/auth/login", handler.Login)
-	// POST /auth/admin/login — 管理后台管理员登录
-	api.POST("/auth/admin/login", handler.AdminLogin)
+
 	// GET /hello — 服务健康检查
 	api.GET("/hello", handler.Hello)
 	// GET /ping — 连通性测试
@@ -39,4 +36,6 @@ func RegisterPublicRoutes(api *gin.RouterGroup) {
 	api.POST("/concurrent/process", handler.ConcurrentProcess)
 	// GET /concurrent/fetch — 并发多源数据抓取示例
 	api.GET("/concurrent/fetch", handler.ConcurrentMultiFetch)
+
+	api.GET("/test", handler.Test)
 }

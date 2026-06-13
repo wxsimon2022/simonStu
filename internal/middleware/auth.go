@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/wxsimon8888/simonStu/internal/logger"
 
 	"github.com/wxsimon8888/simonStu/internal/database"
 	"github.com/wxsimon8888/simonStu/internal/handler"
@@ -34,6 +35,7 @@ func AuthRequired() gin.HandlerFunc {
 
 		valid, err := handler.Auth.ValidateToken(c.Request.Context(), tokenStr)
 		if err != nil || !valid {
+			logger.Errorf(c, "令牌已失效，请重新登录")
 			response.Error(c, http.StatusUnauthorized, "令牌已失效，请重新登录")
 			c.Abort()
 			return

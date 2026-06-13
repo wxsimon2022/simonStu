@@ -136,14 +136,14 @@ func Logout(c *gin.Context) {
 
 // UserInfo 获取当前登录用户信息（含角色、权限）。
 func UserInfo(c *gin.Context) {
-	userID, _ := c.Get("user_id")
+	userId, _ := c.Get("user_id")
 	username, _ := c.Get("username")
 
 	var roles []string
 	database.DB.Table("c_roles").
 		Select("c_roles.name").
 		Joins("JOIN c_admin_roles ON c_roles.id = c_admin_roles.role_id").
-		Where("c_admin_roles.user_id = ? AND c_roles.is_delete = 0 AND c_admin_roles.is_delete = 0", userID).
+		Where("c_admin_roles.user_id = ? AND c_roles.is_delete = 0 AND c_admin_roles.is_delete = 0", userId).
 		Pluck("c_roles.name", &roles)
 
 	var perms []string
@@ -151,11 +151,11 @@ func UserInfo(c *gin.Context) {
 		Select("DISTINCT c_permissions.name").
 		Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
 		Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
-		Where("c_admin_roles.user_id = ? AND c_permissions.is_delete = 0 AND c_role_permissions.is_delete = 0 AND c_admin_roles.is_delete = 0", userID).
+		Where("c_admin_roles.user_id = ? AND c_permissions.is_delete = 0 AND c_role_permissions.is_delete = 0 AND c_admin_roles.is_delete = 0", userId).
 		Pluck("c_permissions.name", &perms)
 
 	response.Success(c, gin.H{
-		"user_id":     userID,
+		"user_id":     userId,
 		"username":    username,
 		"roles":       roles,
 		"permissions": perms,
