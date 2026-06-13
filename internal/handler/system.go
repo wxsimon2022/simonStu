@@ -59,7 +59,7 @@ func SystemAdminList(c *gin.Context) {
 	}
 	var list []adminItem
 	database.DB.Table("c_admin").
-		Select("id, username, real_name, phone, email, status, create_time").
+		Select("id, username, real_name, phone, email, status, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time").
 		Where("is_delete = 0").Order("id DESC").Find(&list)
 
 	// 一次性查所有管理员的角色
@@ -518,7 +518,7 @@ func SystemMenuList(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var perms []model.Permission
-	query := database.DB.Where("type IN ('dir', 'menu') AND is_delete = 0").Order("id ASC")
+	query := database.DB.Where("type IN ('dir', 'menu', 'btn') AND is_delete = 0").Order("id ASC")
 	if !isAdmin.(bool) {
 		query = query.Joins("JOIN c_role_permissions ON c_permissions.id = c_role_permissions.permission_id").
 			Joins("JOIN c_admin_roles ON c_role_permissions.role_id = c_admin_roles.role_id").
@@ -533,7 +533,17 @@ func SystemMenuList(c *gin.Context) {
 			parts := strings.SplitN(p.Name, ":", 2)
 			if len(parts) == 2 && parts[1] == "list" {
 				route = "/" + parts[0]
-				if parts[0] == "perm" {
+			}
+			if parts[0] == "perm" {
+				route = "/permission"
+			}
+			if !strings.Contains(p.Name, ":") {
+				switch p.Name {
+				case "admin":
+					route = "/admin"
+				case "role":
+					route = "/role"
+				case "perm":
 					route = "/permission"
 				}
 			}
@@ -560,5 +570,6 @@ func SystemMenuList(c *gin.Context) {
 	if tree == nil {
 		tree = []MenuItem{}
 	}
+
 	response.Success(c, gin.H{"menus": tree})
 }
