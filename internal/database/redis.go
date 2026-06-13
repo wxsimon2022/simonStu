@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 
@@ -18,12 +19,20 @@ func InitRedis(cfg *config.Config) {
 	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
 
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: cfg.RedisPassword,
-		DB:       cfg.RedisDB,
+		Addr:         addr,
+		Password:     cfg.RedisPassword,
+		DB:           cfg.RedisDB,
+		DialTimeout:  3 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		MaxRetries:   1,
+		PoolSize:     10,
+		MinIdleConns: 3,
 	})
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	if err := RedisClient.Ping(ctx).Err(); err != nil {
 		log.Printf("Redis 连接失败: %v", err)
 		RedisClient = nil

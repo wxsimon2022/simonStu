@@ -70,10 +70,27 @@ func DubboInit() error {
 	// 5. 注册服务代理
 	ref.Implement(svc)
 
-	// 等待连接就绪
-	time.Sleep(1 * time.Second)
+	// 6. 等待连接就绪（最多 3s，每 100ms 探测一次）
+	probeCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	probed := false
+	for {
+		_, err := svc.SayHello(probeCtx, "probe")
+		if err == nil {
+			probed = true
+			break
+		}
+		select {
+		case <-probeCtx.Done():
+			log.Println("Dubbo 连接等待超时，将继续在后台重试")
+			goto done
+		default:
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 
-	// 6. 注册 Nacos 订阅，让数据能在 Nacos 控制台的"订阅者列表"中显示
+done:
+	// 7. 注册 Nacos 订阅，让数据能在 Nacos 控制台的"订阅者列表"中显示
 	if err := nacos.WatchService(NacosServiceName, func(instances []model.Instance) {
 		log.Printf("Nacos 服务实例变化，当前 %d 个实例", len(instances))
 	}); err != nil {
@@ -81,6 +98,10 @@ func DubboInit() error {
 	}
 
 	DemoSvc = svc
-	log.Println("Dubbo 消费者初始化完成，已直连 provider")
+	if probed {
+		log.Println("Dubbo 消费者初始化完成，已直连 provider")
+	} else {
+		log.Println("Dubbo 消费者代理已创建，连接后台确认中")
+	}
 	return nil
 }
