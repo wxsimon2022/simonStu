@@ -69,6 +69,21 @@ func Test(c *gin.Context) {
 	// repository.CacheDelete(ctx, "cache:admin:list_v2")
 	// repository.CacheClearByPrefix(ctx, "cache:admin:")
 
+	// ==================== 8. model rows → map[key]row ====================
+	// 用工具函数一行搞定，不用手写 for 循环
+	mapById := util.SliceToMap(modelRows, func(v model.Admin) int { return v.ID })
+	// map[int]model.Admin{ 1: {ID:1, Username:"admin", ...}, ... }
+	// 查 ID=5: mapById[5].RealName
+
+	mapByUsername := util.SliceToMap(modelRows, func(v model.Admin) string { return v.Username })
+	// map[string]model.Admin{ "admin": {ID:1, Username:"admin", ...}, ... }
+	// 查 username="admin": mapByUsername["admin"].Email
+
+	// 泛型版本：按 json tag 转为通用 map
+	mapByIdGeneric := util.SliceToMapGeneric(modelRows, func(v map[string]any) int {
+		return int(v["id"].(float64))
+	})
+
 	// ==================== 其他演示（原样保留）====================
 	var idArray []int
 	for _, v := range modelRows {
@@ -102,8 +117,11 @@ func Test(c *gin.Context) {
 			"hit":     rawOk,
 			"records": cachedRaw,
 		},
-		"id_array":     idArray,
-		"queue_items":  queueItems,
-		"queue_lrange": queueConsumed,
+		"map_by_id":         mapById,        // map[int]model.Admin
+		"map_by_username":   mapByUsername,  // map[string]model.Admin
+		"map_by_id_generic": mapByIdGeneric, // map[int]map[string]any
+		"id_array":          idArray,
+		"queue_items":       queueItems,
+		"queue_lrange":      queueConsumed,
 	})
 }
