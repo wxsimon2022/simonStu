@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -16,6 +17,12 @@ type Config struct {
 	TZ        string // 时区，默认 Asia/Shanghai
 	LogDir    string // 日志输出目录，默认 storage/logs
 	JWTSecret string // JWT 签名密钥
+
+	NacosHost      string // Nacos 服务地址
+	NacosPort      uint64 // Nacos 服务端口
+	NacosNamespace string // Nacos 命名空间（public 为默认）
+	NacosUsername  string // Nacos 登录用户名
+	NacosPassword  string // Nacos 登录密码
 
 	RedisHost     string // Redis 地址
 	RedisPort     string // Redis 端口
@@ -41,6 +48,12 @@ func Load() *Config {
 		TZ:        getEnv("TZ", "Asia/Shanghai"),
 		LogDir:    getEnv("LOG_DIR", "storage/logs"),
 		JWTSecret: getEnv("JWT_SECRET", "simon-stu-secret-key"),
+
+		NacosHost:      getEnv("NACOS_HOST", "127.0.0.1"),
+		NacosPort:      getEnvUint64("NACOS_PORT", 8848),
+		NacosNamespace: getEnv("NACOS_NAMESPACE", "public"),
+		NacosUsername:  getEnv("NACOS_USERNAME", ""),
+		NacosPassword:  getEnv("NACOS_PASSWORD", ""),
 
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
@@ -72,4 +85,20 @@ func getEnvInt(key string, fallback int) int {
 		log.Printf("警告: %s 不是有效的数字，使用默认值 %d", key, fallback)
 	}
 	return fallback
+}
+
+// getEnvUint64 读取环境变量并转为 uint64，用于端口号等无符号整型配置。
+func getEnvUint64(key string, fallback uint64) uint64 {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.ParseUint(v, 10, 64); err == nil {
+			return n
+		}
+		log.Printf("警告: %s 不是有效的数字，使用默认值 %d", key, fallback)
+	}
+	return fallback
+}
+
+// NacosAddress 返回 Nacos 完整地址 "host:port"。
+func (c *Config) NacosAddress() string {
+	return fmt.Sprintf("%s:%d", c.NacosHost, c.NacosPort)
 }

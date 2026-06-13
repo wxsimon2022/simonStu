@@ -1,4 +1,3 @@
-// Package main 应用入口。初始化配置、日志、数据库后启动 HTTP 服务。
 package main
 
 import (
@@ -8,8 +7,10 @@ import (
 
 	"github.com/wxsimon8888/simonStu/config"
 	"github.com/wxsimon8888/simonStu/internal/database"
+	"github.com/wxsimon8888/simonStu/internal/dubbo"
 	"github.com/wxsimon8888/simonStu/internal/handler"
 	"github.com/wxsimon8888/simonStu/internal/logger"
+	"github.com/wxsimon8888/simonStu/internal/nacos"
 	"github.com/wxsimon8888/simonStu/internal/router"
 	"github.com/wxsimon8888/simonStu/internal/service"
 )
@@ -28,7 +29,14 @@ func main() {
 	database.InitRedis(cfg)
 	database.InitMySQL(cfg)
 
-	// 初始化认证服务
+	if err := nacos.InitNacos(cfg); err != nil {
+		log.Printf("Nacos 初始化失败（非关键，继续启动）: %v", err)
+	}
+
+	if err := dubbo.DubboInit(); err != nil {
+		log.Printf("Dubbo 初始化失败（非关键，继续启动）: %v", err)
+	}
+
 	handler.Auth = service.NewAuthService(cfg.JWTSecret, database.RedisClient)
 
 	r := router.Setup(cfg.Mode)
