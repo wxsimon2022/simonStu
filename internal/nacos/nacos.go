@@ -5,24 +5,24 @@ import (
 	"log"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
-	"github.com/wxsimon2022/nacoswrap"
+	"github.com/wxsimon2022/dubboconn"
 
 	"github.com/wxsimon2022/simonStu/config"
 )
 
-// client is the nacoswrap client shared across the app, initialized by InitNacos.
-var client *nacoswrap.Client
+// client is the dubboconn Nacos client shared across the app.
+var client *dubboconn.Client
 
 // InitNacos 初始化 Nacos 客户端。
 func InitNacos(cfg *config.Config) error {
-	c, err := nacoswrap.NewClient(nacoswrap.Config{
+	c, err := dubboconn.NewNacos(dubboconn.NacosConfig{
 		Host:      cfg.NacosHost,
 		Port:      cfg.NacosPort,
 		Namespace: cfg.NacosNamespace,
 		Username:  cfg.NacosUsername,
 		Password:  cfg.NacosPassword,
 		LogDir:    cfg.LogDir + "/nacos",
-		AppName:   "simonStu-go-service",
+		AppName:   cfg.NacosAppName,
 	})
 	if err != nil {
 		return fmt.Errorf("Nacos 客户端创建失败: %w", err)
@@ -33,6 +33,7 @@ func InitNacos(cfg *config.Config) error {
 	if cfg.NacosUsername != "" {
 		log.Printf("Nacos 已启用用户认证: %s", cfg.NacosUsername)
 	}
+	log.Printf("Nacos 订阅者名称: %s", cfg.NacosAppName)
 	return nil
 }
 

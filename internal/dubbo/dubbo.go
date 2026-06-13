@@ -2,25 +2,17 @@ package dubbo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	dubboCfg "dubbo.apache.org/dubbo-go/v3/config"
-	_ "dubbo.apache.org/dubbo-go/v3/imports"
+	"github.com/wxsimon2022/dubboconn"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
-
-	"github.com/wxsimon2022/simonStu/internal/nacos"
+	"github.com/wxsimon2022/simonStu/config"
 )
 
-// =========================================================================
-// 对应 Java 端：org.apache.dubbo.simon.quickstart.dubbo.api.DemoService
-//   public interface DemoService {
-//       String sayHello(String name);
-//   }
-// =========================================================================
-
+// DemoService 对应 Java 端 org.apache.dubbo.simon.quickstart.dubbo.api.DemoService。
 type DemoService struct {
 	SayHello   func(ctx context.Context, name string) (string, error)
 	SayGoodBye func(ctx context.Context, name string) (string, error)
@@ -31,77 +23,63 @@ var DemoSvc *DemoService
 // NacosServiceName Java 端注册到 Nacos 的服务名。
 const NacosServiceName = "providers:org.apache.dubbo.simon.quickstart.dubbo.api.DemoService::"
 
+// ready 在 DubboInit 完成后关闭（无论成功还是失败）。
+var ready = make(chan struct{})
+
+// Ready 返回一个 channel，DubboInit 返回后关闭。
+func Ready() <-chan struct{} { return ready }
+
+// WaitReady 等待 Dubbo 就绪，最多等 timeout。支持通过 ctx 提前取消。
+func WaitReady(ctx context.Context, timeout time.Duration) error {
+	select {
+	case <-ready:
+		if DemoSvc == nil {
+			return errors.New("dubbo: 初始化失败（DemoSvc 为 nil）")
+		}
+		return nil
+	case <-time.After(timeout):
+		return fmt.Errorf("dubbo: %v 内未就绪", timeout)
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 // DubboInit 初始化 Dubbo 消费者。
-// 先用 Nacos 查 provider 地址，再用 dubbo-go Config API + direct URL 直连。
-func DubboInit() error {
+// 通过 dubboconn 一站式完成 Nacos 服务发现 + dubbo-go 代理创建。
+func DubboInit(cfg *config.Config) (err error) {
+	defer func() {
+		close(ready)
+		if err != nil {
+			log.Printf("Dubbo 初始化失败: %v", err)
+		} else {
+			log.Println("Dubbo 消费者初始化完成，已直连 provider")
+		}
+	}()
+
 	log.Println("Dubbo 消费者初始化中...")
 
-	// 1. 通过 Nacos 查询 provider 实例
-	instances, err := nacos.GetServiceInstances(NacosServiceName)
-	if err != nil {
-		return fmt.Errorf("查询 Nacos 服务失败: %w", err)
-	}
-	if len(instances) == 0 {
-		return fmt.Errorf("Nacos 上未找到可用的 DemoService 实例")
-	}
-
-	inst := instances[0]
-	providerURL := fmt.Sprintf("tri://%s:%d", inst.Ip, inst.Port)
-	log.Printf("Nacos 发现 provider: %s (healthy=%v)", providerURL, inst.Healthy)
-
-	// 2. 用 Config API 注册服务（直接 URL，不配 registry）
-	ref := &dubboCfg.ReferenceConfig{
-		InterfaceName:  "org.apache.dubbo.simon.quickstart.dubbo.api.DemoService",
-		Protocol:       "tri",
-		URL:            providerURL,
-		Retries:        "2",
-		RequestTimeout: "30s",
-		Serialization:  "hessian2",
-	}
-
-	// 3. 创建服务代理
+	// 不能直接传 &DemoSvc（DemoSvc 是 *DemoService，&DemoSvc 是 **DemoService），
+	// dubbo-go 的 ref.Refer/Implement 需要 *struct，分配本地变量确保非 nil。
 	svc := &DemoService{}
-	rootCfg := dubboCfg.NewRootConfigBuilder().Build()
-	ref.Init(rootCfg)
-
-	// 4. 建立连接、创建代理（必须在 Implement 之前）
-	ref.Refer(svc)
-
-	// 5. 注册服务代理
-	ref.Implement(svc)
-
-	// 6. 等待连接就绪（最多 3s，每 100ms 探测一次）
-	probeCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	probed := false
-	for {
-		_, err := svc.SayHello(probeCtx, "probe")
-		if err == nil {
-			probed = true
-			break
-		}
-		select {
-		case <-probeCtx.Done():
-			log.Println("Dubbo 连接等待超时，将继续在后台重试")
-			goto done
-		default:
-			time.Sleep(100 * time.Millisecond)
-		}
+	conn, err := dubboconn.Connect(dubboconn.Config{
+		NacosHost:      cfg.NacosHost,
+		NacosPort:      cfg.NacosPort,
+		NacosNamespace: cfg.NacosNamespace,
+		NacosUsername:  cfg.NacosUsername,
+		NacosPassword:  cfg.NacosPassword,
+		ServiceName:    NacosServiceName,
+		InterfaceName:  "org.apache.dubbo.simon.quickstart.dubbo.api.DemoService",
+		NacosAppName:   cfg.NacosAppName,
+	}, svc)
+	if err != nil {
+		return fmt.Errorf("dubboconn: %w", err)
 	}
-
-done:
-	// 7. 注册 Nacos 订阅，让数据能在 Nacos 控制台的"订阅者列表"中显示
-	if err := nacos.WatchService(NacosServiceName, func(instances []model.Instance) {
-		log.Printf("Nacos 服务实例变化，当前 %d 个实例", len(instances))
-	}); err != nil {
-		log.Printf("Nacos 订阅失败（非关键）: %v", err)
-	}
-
 	DemoSvc = svc
-	if probed {
-		log.Println("Dubbo 消费者初始化完成，已直连 provider")
-	} else {
-		log.Println("Dubbo 消费者代理已创建，连接后台确认中")
-	}
+
+	// 注册 Nacos 订阅，让数据能在 Nacos 控制台的"订阅者列表"中显示
+	_ = conn.Watch(func(url string) {
+		log.Printf("Nacos 服务实例变化，新地址: %s", url)
+	})
+
 	return nil
 }

@@ -3,6 +3,7 @@ package dubbo
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -63,22 +64,16 @@ func NacosServices(c *gin.Context) {
 // SayHello 调用 Java Dubbo 服务的 sayHello 方法。
 //
 // GET /commonApi/dubbo/hello?name=simon
-//
-// Java 端方法签名：
-//
-//	public interface DemoService {
-//	    String sayHello(String name);
-//	}
 func SayHello(c *gin.Context) {
 	name := c.DefaultQuery("name", "World")
 
-	if dubboSvc.DemoSvc == nil {
-		logger.Errorf(c, "SayHello Dubbo 服务未初始化")
-		response.Error(c, http.StatusServiceUnavailable, "Dubbo 服务未初始化")
+	// 等待 Dubbo 就绪（最长 3s，避免启动时竞态）
+	if err := dubboSvc.WaitReady(c.Request.Context(), 3*time.Second); err != nil {
+		logger.Errorf(c, "SayHello Dubbo 未就绪: %v", err)
+		response.Error(c, http.StatusServiceUnavailable, "Dubbo 服务正在初始化，请稍后重试")
 		return
 	}
 
-	// 通过 dubbo-go 代理调用 Java 端的 sayHello 方法
 	msg, err := dubboSvc.DemoSvc.SayHello(c.Request.Context(), name)
 	if err != nil {
 		logger.Errorf(c, "SayHello Dubbo 调用失败 err=%v", err)
@@ -92,20 +87,22 @@ func SayHello(c *gin.Context) {
 	})
 }
 
+// SayGoodBye 调用 Java Dubbo 服务的 sayGoodBye 方法。
+//
+// GET /commonApi/dubbo/sayGoodBye?name=simon
 func SayGoodBye(c *gin.Context) {
-
 	name := c.DefaultQuery("name", "World")
 
-	if dubboSvc.DemoSvc == nil {
-		logger.Errorf(c, "SayHello Dubbo 服务未初始化")
-		response.Error(c, http.StatusServiceUnavailable, "Dubbo 服务未初始化")
+	// 等待 Dubbo 就绪（最长 3s，避免启动时竞态）
+	if err := dubboSvc.WaitReady(c.Request.Context(), 3*time.Second); err != nil {
+		logger.Errorf(c, "SayGoodBye Dubbo 未就绪: %v", err)
+		response.Error(c, http.StatusServiceUnavailable, "Dubbo 服务正在初始化，请稍后重试")
 		return
 	}
 
-	// 通过 dubbo-go 代理调用 Java 端的 sayHello 方法
 	msg, err := dubboSvc.DemoSvc.SayGoodBye(c.Request.Context(), name)
 	if err != nil {
-		logger.Errorf(c, "SayHello Dubbo 调用失败 err=%v", err)
+		logger.Errorf(c, "SayGoodBye Dubbo 调用失败 err=%v", err)
 		response.Error(c, http.StatusBadGateway, "调用 Dubbo 服务失败: "+err.Error())
 		return
 	}

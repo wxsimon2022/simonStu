@@ -23,6 +23,7 @@ type Config struct {
 	NacosNamespace string // Nacos 命名空间（public 为默认）
 	NacosUsername  string // Nacos 登录用户名
 	NacosPassword  string // Nacos 登录密码
+	NacosAppName   string // Nacos 订阅者名称（Nacos 控制台显示）
 
 	RedisHost     string // Redis 地址
 	RedisPort     string // Redis 端口
@@ -54,6 +55,7 @@ func Load() *Config {
 		NacosNamespace: getEnv("NACOS_NAMESPACE", "public"),
 		NacosUsername:  getEnv("NACOS_USERNAME", ""),
 		NacosPassword:  getEnv("NACOS_PASSWORD", ""),
+		NacosAppName:   getEnv("NACOS_APP_NAME", "simonStu-go-service"),
 
 		RedisHost:     getEnv("REDIS_HOST", "127.0.0.1"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),

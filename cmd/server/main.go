@@ -55,7 +55,7 @@ func main() {
 	// Dubbo 后台异步初始化，不阻塞 HTTP 启动
 	// HTTP 先可用，Dubbo 调用在就绪前返回 503
 	go func() {
-		if err := dubbo.DubboInit(); err != nil {
+		if err := dubbo.DubboInit(cfg); err != nil {
 			log.Printf("Dubbo 后台初始化失败（非关键，服务已启动）: %v", err)
 		} else {
 			log.Printf("Dubbo 后台初始化完成")

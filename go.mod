@@ -3,19 +3,19 @@ module github.com/wxsimon2022/simonStu
 go 1.25.0
 
 require (
-	dubbo.apache.org/dubbo-go/v3 v3.3.2-20260419
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.7
 	github.com/redis/go-redis/v9 v9.7.0
-	github.com/wxsimon2022/nacoswrap v0.0.0-20260613143240-5d7f905457a3
+	github.com/wxsimon2022/dubboconn v0.0.0-20260614060715-f6080a640900
 	golang.org/x/crypto v0.49.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
 require (
+	dubbo.apache.org/dubbo-go/v3 v3.3.2-20260419 // indirect
 	github.com/RoaringBitmap/roaring v1.2.3 // indirect
 	github.com/Workiva/go-datastructures v1.0.52 // indirect
 	github.com/alibaba/sentinel-golang v1.0.4 // indirect
@@ -166,3 +166,5 @@ require (
 )
 
 replace dubbo.apache.org/dubbo-go/v3 => github.com/apache/dubbo-go/v3 v3.3.2-20260419
+
+replace github.com/wxsimon2022/dubboconn => /private/tmp/dubboconn
