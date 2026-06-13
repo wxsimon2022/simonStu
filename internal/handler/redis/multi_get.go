@@ -20,6 +20,10 @@ import (
 //
 //	POST /commonApi/redis/mget
 //	{"keys": ["key1", "key2", "key3"]}
+//
+// 适用场景：
+//   - 批量查用户信息、权限列表等，一次请求替代 N 次串行查询
+//   - key 数量较大的时候（100+），并发收益明显
 func RedisMultiGet(c *gin.Context) {
 	var req RedisMultiGetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -35,13 +39,26 @@ func RedisMultiGet(c *gin.Context) {
 	}
 
 	total := len(req.Keys)
-	logger.Infof(c, "RedisMultiGet 开始 keys=%d keys=%v", total, req.Keys)
+	logger.Infof(c, "RedisMultiGet 开始 keys=%d", total)
 	start := time.Now()
 
-	// ———— 方式一：Fan-Out / Fan-In ————
+	// =========================================================================
+	// 方式一：Fan-Out / Fan-In
+	// =========================================================================
+	// 思路：给每个 key 启动一个 goroutine，各自查询 Redis 后把结果写入 channel，
+	// 主 goroutine 从 channel 收齐所有结果。
+	//
+	// 优点：每个 key 独立并发，最快的 key 先返回，不会被慢的 key 阻塞。
+	// 缺点：N 个 key 就开 N 个 goroutine，key 数量过大（数千+）时 goroutine 调度开销可观。
+	// 适用：几十到几百个 key，且各 key 查询延迟差异较大的场景。
+	//
+	// 这里用缓冲 channel（容量 = total），防止 goroutine 发数据时阻塞。
 	ch := make(chan redisGetResult, total)
-	ctx := c.Request.Context()
 
+	// 从请求 context 派生子 context，请求取消时所有 goroutine 能感知退出。
+	// 关键细节：闭包捕获的是变量 k 的副本（通过函数参数传值），
+	// 而不是循环变量 key，避免经典的"循环变量捕获陷阱"。
+	ctx := c.Request.Context()
 	for _, key := range req.Keys {
 		go func(k string) {
 			t := time.Now()
@@ -52,27 +69,44 @@ func RedisMultiGet(c *gin.Context) {
 			} else {
 				r.Value = val
 			}
-			ch <- r
+			ch <- r // 结果写入 channel，不关心谁在读
 		}(key)
 	}
 
+	// 主 goroutine 收结果：从 channel 读 total 次，不管顺序。
+	// Fan-In 模式的核心：多个发送者，一个接收者。
 	var fanInResults []redisGetResult
 	for range req.Keys {
+		// 阻塞直到有结果可读。先完成的 goroutine 先被读到，
+		// 所以 fanInResults 的顺序不一定与 req.Keys 一致。
 		fanInResults = append(fanInResults, <-ch)
 	}
 	close(ch)
 
-	// ———— 方式二：Worker Pool ————
+	// =========================================================================
+	// 方式二：Worker Pool（固定 worker 数）
+	// =========================================================================
+	// 思路：把所有 key 放入任务通道，启动固定数量的 worker goroutine 从通道取任务，
+	// 处理完一个再取下个，直到通道为空。
+	//
+	// 优点：goroutine 数量可控（本例 5 个），不会因 key 太多打满调度器。
+	// 缺点：如果某个 key 查询特别慢，会阻塞当前 worker 处理后续 key，整体耗时 ≈ (总任务数/worker数) * 平均耗时。
+	// 适用：几千上万个 key，或者需要控制 Redis 连接数防止打爆的场景。
+	//
+	// 关键设计：任务通道和结果通道都带缓冲，避免生产者和消费者相互阻塞。
 	const workerCount = 5
 	taskCh := make(chan string, total)
 	resultCh := make(chan redisGetResult, total)
 	var wg sync.WaitGroup
 
+	// 把 key 全部放入任务通道后关闭，worker 遍历完自然退出。
 	for _, key := range req.Keys {
 		taskCh <- key
 	}
 	close(taskCh)
 
+	// 启动 workerCount 个 worker，每个 worker 是一个独立的 goroutine。
+	// worker 通过 for-range 从 taskCh 读取任务，通道关闭且读完时 for-range 自动退出。
 	ctx2 := c.Request.Context()
 	for i := 0; i < workerCount; i++ {
 		wg.Add(1)
@@ -93,11 +127,14 @@ func RedisMultiGet(c *gin.Context) {
 		}(i + 1)
 	}
 
+	// 另起一个 goroutine 等待所有 worker 结束，然后关闭结果通道。
+	// 如果直接在主 goroutine 里 wg.Wait()，会导致无法同时从 resultCh 收结果（死锁）。
 	go func() {
 		wg.Wait()
 		close(resultCh)
 	}()
 
+	// 主 goroutine 收结果：worker 边处理边发，这边边收。
 	var poolResults []redisGetResult
 	for r := range resultCh {
 		poolResults = append(poolResults, r)
@@ -121,7 +158,7 @@ func RedisMultiGet(c *gin.Context) {
 		"success":        success,
 		"failed":         fail,
 		"cost_ms":        elapsed,
-		"fan_in_results": fanInResults,
-		"pool_results":   poolResults,
+		"fan_in_results": fanInResults, // 方式一结果（goroutine 数量 = key 数量）
+		"pool_results":   poolResults,  // 方式二结果（固定 5 个 goroutine）
 	})
 }
