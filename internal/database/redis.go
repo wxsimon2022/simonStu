@@ -26,6 +26,7 @@ func InitRedis(cfg *config.Config) {
 	ctx := context.Background()
 	if err := RedisClient.Ping(ctx).Err(); err != nil {
 		log.Printf("Redis 连接失败: %v", err)
+		RedisClient = nil
 	} else {
 		log.Printf("Redis 连接成功 (%s)", addr)
 	}

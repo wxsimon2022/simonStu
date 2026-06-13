@@ -63,15 +63,20 @@ func (s *AuthService) StoreToken(ctx context.Context, userID int, tokenStr strin
 }
 
 // ValidateToken 检查令牌是否存在于 Redis（未被撤销）。
+
+// ValidateToken 检查令牌是否存在于 Redis（未被撤销）。
+// Redis 不可用时跳过校验，允许请求继续。
 func (s *AuthService) ValidateToken(ctx context.Context, tokenStr string) (bool, error) {
 	if s.redisClient == nil {
-		return true, nil // Redis 未配置，跳过校验
+		return true, nil
 	}
 	n, err := s.redisClient.Exists(ctx, "token:"+tokenStr).Result()
-	return n > 0, err
+	if err != nil {
+		// Redis 不可用时不阻塞请求
+		return true, nil
+	}
+	return n > 0, nil
 }
-
-// RevokeToken 从 Redis 删除令牌，使其立即失效。
 func (s *AuthService) RevokeToken(ctx context.Context, tokenStr string) error {
 	if s.redisClient == nil {
 		return nil

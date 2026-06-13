@@ -56,5 +56,12 @@ func Setup(mode string) *gin.Engine {
 
 		}
 	}
+
+	// 生产环境前端静态文件（单镜像部署）
+	r.Static("/assets", "./frontend/dist/assets")
+	r.StaticFile("/favicon.ico", "./frontend/dist/favicon.ico")
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./frontend/dist/index.html")
+	})
 	return r
 }
