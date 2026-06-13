@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { api } from '../utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { Folder, FolderOpened, Menu, SwitchButton, Search } from '@element-plus/icons-vue'
 
 const treeRef = ref(null)
@@ -12,10 +13,21 @@ const filterText = ref('')
 const createVisible = ref(false)
 const editVisible = ref(false)
 const contextMenu = ref({ visible: false, x: 0, y: 0 })
-const form = ref({ name: '', description: '', type: 'menu', parent_id: null })
-const editForm = ref({ id: 0, name: '', description: '', type: 'menu', parent_id: null })
+const form = ref({ name: '', description: '', type: 'menu', icon: '', parent_id: null })
+const editForm = ref({ id: 0, name: '', description: '', type: 'menu', icon: '', parent_id: null })
 
 const treeProps = { children: 'children', label: 'name' }
+// 常用 Element Plus 图标列表
+const iconOptions = [
+  '', 'User', 'UserFilled', 'Management', 'Setting', 'Menu',
+  'Folder', 'FolderOpened', 'HomeFilled', 'Tools',
+  'Histogram', 'DataAnalysis', 'Aim', 'Bell',
+  'ChatDotSquare', 'CircleCheck', 'Document', 'Notebook',
+  'Files', 'Search', 'Plus', 'Edit', 'Delete',
+  'SwitchButton', 'Refresh', 'Share', 'Upload',
+  'Flag', 'Star', 'Collection', 'List',
+]
+
 const typeOptions = [
   { label: '目录', value: 'dir' },
   { label: '菜单', value: 'menu' },
@@ -24,6 +36,13 @@ const typeOptions = [
 
 function typeLabel(t) { return { dir: '目录', menu: '菜单', btn: '按钮' }[t] || '菜单' }
 function typeTagType(t) { return { dir: 'warning', menu: 'primary', btn: 'info' }[t] || 'primary' }
+
+// 树节点图标：优先用数据库中配置的 icon，否则按 type 显示默认图标
+function getNodeIcon(data) {
+  if (data.icon && ElementPlusIconsVue[data.icon]) return ElementPlusIconsVue[data.icon]
+  const fallback = { dir: Folder, menu: Menu, btn: SwitchButton }
+  return fallback[data.type] || Menu
+}
 
 function countNodes(nodes) {
   let c = 0
@@ -77,13 +96,13 @@ function onContextMenu(e, data) {
 }
 
 function openCreate() {
-  form.value = { name: '', description: '', type: 'menu', parent_id: null }
+  form.value = { name: '', description: '', type: 'menu', icon: '', parent_id: null }
   createVisible.value = true
 }
 function createChild() {
   contextMenu.value.visible = false
   const pid = selectedNode.value?.id || null
-  form.value = { name: '', description: '', type: 'menu', parent_id: pid }
+  form.value = { name: '', description: '', type: 'menu', icon: '', parent_id: pid }
   createVisible.value = true
 }
 function openEdit() {
@@ -92,6 +111,7 @@ function openEdit() {
   editForm.value = {
     id: selectedNode.value.id, name: selectedNode.value.name,
     description: selectedNode.value.description || '', type: selectedNode.value.type || 'menu',
+    icon: selectedNode.value.icon || '',
     parent_id: selectedNode.value.parent_id ?? null,
   }
   editVisible.value = true
@@ -99,14 +119,14 @@ function openEdit() {
 
 async function handleCreate() {
   if (!form.value.name) { ElMessage.warning('请输入菜单标识'); return }
-  const body = { name: form.value.name, description: form.value.description || '', type: form.value.type || 'menu' }
+  const body = { name: form.value.name, description: form.value.description || '', type: form.value.type || 'menu', icon: form.value.icon || '' }
   const res = await api('/api/permission', { method: 'POST', body: JSON.stringify(body) })
   if (res.code === 200) { ElMessage.success('创建成功'); createVisible.value = false; fetchData() }
   else ElMessage.error(res.message || '创建失败')
 }
 
 async function handleEdit() {
-  const body = { id: editForm.value.id, name: editForm.value.name, description: editForm.value.description || '', type: editForm.value.type || 'menu', parent_id: editForm.value.parent_id ?? 0 }
+  const body = { id: editForm.value.id, name: editForm.value.name, description: editForm.value.description || '', type: editForm.value.type || 'menu', icon: editForm.value.icon || '', parent_id: editForm.value.parent_id ?? 0 }
   const res = await api('/api/permission', { method: 'PUT', body: JSON.stringify(body) })
   if (res.code === 200) { ElMessage.success('更新成功'); editVisible.value = false; selectedNode.value = null; fetchData() }
   else ElMessage.error(res.message || '更新失败')
@@ -173,12 +193,11 @@ async function handleDelete() {
         <div class="tree-node">
           <div class="node-info">
             <el-icon :size="16" class="node-icon">
-              <Folder v-if="data.type === 'dir'" style="color:#e6a23c" />
-              <Menu v-else-if="data.type === 'menu' || !data.type" style="color:#409eff" />
-              <SwitchButton v-else style="color:#909399" />
+              <component :is="getNodeIcon(data)" />
             </el-icon>
             <span class="node-name">{{ data.name }}</span>
             <span v-if="data.description" class="node-desc">{{ data.description }}</span>
+            <span v-if="data.icon" class="node-icon-name">{{ data.icon }}</span>
           </div>
           <el-tag :type="typeTagType(data.type)" size="small" effect="plain" class="node-tag">
             {{ typeLabel(data.type) }}
@@ -213,6 +232,16 @@ async function handleDelete() {
       <el-form-item label="标识"><el-input v-model="form.name" placeholder="如 log:view" /></el-form-item>
       <el-form-item label="描述"><el-input v-model="form.description" /></el-form-item>
       <el-form-item label="类型"><el-select v-model="form.type" style="width:100%"><el-option v-for="t in typeOptions" :key="t.value" :label="t.label" :value="t.value" /></el-select></el-form-item>
+      <el-form-item label="图标">
+        <el-select v-model="form.icon" filterable clearable placeholder="选择图标（仅目录/菜单）" style="width:100%">
+          <el-option v-for="ico in iconOptions" :key="ico" :label="ico || '无'" :value="ico">
+            <span style="display:flex;align-items:center;gap:6px">
+              <el-icon :size="16"><component :is="getNodeIcon({icon:ico,type:'menu'})" /></el-icon>
+              <span>{{ ico || '无' }}</span>
+            </span>
+          </el-option>
+        </el-select>
+      </el-form-item>
       <el-form-item label="父菜单"><el-tree-select v-model="form.parent_id" :data="treeData" :props="{ children:'children', label:'name', value:'id' }" placeholder="无（根节点）" clearable check-strictly filterable style="width:100%" /></el-form-item>
     </el-form>
     <template #footer><el-button @click="createVisible = false">取消</el-button><el-button type="primary" @click="handleCreate">确定</el-button></template>
@@ -223,6 +252,16 @@ async function handleDelete() {
       <el-form-item label="标识"><el-input v-model="editForm.name" /></el-form-item>
       <el-form-item label="描述"><el-input v-model="editForm.description" /></el-form-item>
       <el-form-item label="类型"><el-select v-model="editForm.type" style="width:100%"><el-option v-for="t in typeOptions" :key="t.value" :label="t.label" :value="t.value" /></el-select></el-form-item>
+      <el-form-item label="图标">
+        <el-select v-model="editForm.icon" filterable clearable placeholder="选择图标（仅目录/菜单）" style="width:100%">
+          <el-option v-for="ico in iconOptions" :key="ico" :label="ico || '无'" :value="ico">
+            <span style="display:flex;align-items:center;gap:6px">
+              <el-icon :size="16"><component :is="getNodeIcon({icon:ico,type:'menu'})" /></el-icon>
+              <span>{{ ico || '无' }}</span>
+            </span>
+          </el-option>
+        </el-select>
+      </el-form-item>
       <el-form-item label="父菜单"><el-tree-select v-model="editForm.parent_id" :data="treeData" :props="{ children:'children', label:'name', value:'id' }" placeholder="无（根节点）" clearable check-strictly filterable style="width:100%" /></el-form-item>
     </el-form>
     <template #footer><el-button @click="editVisible = false">取消</el-button><el-button type="primary" @click="handleEdit">保存</el-button></template>
@@ -351,6 +390,12 @@ async function handleDelete() {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 200px;
+}
+.node-icon-name {
+  color: #aaa;
+  font-size: 11px;
+  margin-left: 4px;
+  font-style: italic;
 }
 .node-tag {
   flex-shrink: 0;

@@ -7,6 +7,7 @@ type Permission struct {
 	Description string `gorm:"column:description;type:varchar(255);default:''" json:"description"`
 	Type        string `gorm:"column:type;type:varchar(16);default:'menu'" json:"type"`
 	ParentID    *int   `gorm:"column:parent_id" json:"parent_id"`
+	Icon        string `gorm:"column:icon;type:varchar(64);default:''" json:"icon"`
 }
 
 func (Permission) TableName() string { return "c_permissions" }

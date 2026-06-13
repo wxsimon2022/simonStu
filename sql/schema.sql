@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS c_permissions (
   name        VARCHAR(128)  NOT NULL UNIQUE COMMENT '权限标识，如 user:list',
   description VARCHAR(255)  DEFAULT '' COMMENT '权限描述',
   type        VARCHAR(16)   NOT NULL DEFAULT 'menu' COMMENT 'dir=目录 menu=菜单 btn=按钮',
+  icon        VARCHAR(64)   DEFAULT '' COMMENT 'Element Plus 图标名，如 User / Setting / Management',
   parent_id   INT           DEFAULT NULL COMMENT '父权限 ID',
   is_delete   TINYINT       NOT NULL DEFAULT 0 COMMENT '0=正常 1=删除',
   create_time DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,

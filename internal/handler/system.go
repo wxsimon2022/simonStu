@@ -396,12 +396,14 @@ type PermissionTreeItem struct {
 	Description string               `json:"description"`
 	Type        string               `json:"type"` // dir / menu / btn
 	Children    []PermissionTreeItem `json:"children"`
+	Icon        string               `json:"icon"`
 }
 
 type PermissionCreateRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	Type        string `json:"type"`
+	Icon        string `json:"icon"`
 	ParentID    *int   `json:"parent_id"`
 }
 
@@ -410,6 +412,7 @@ type PermissionUpdateRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Type        string `json:"type"`
+	Icon        string `json:"icon"`
 	ParentID    *int   `json:"parent_id"`
 }
 
@@ -425,7 +428,7 @@ func SystemPermissionCreate(c *gin.Context) {
 		return
 	}
 	perm := model.Permission{
-		Name: req.Name, Description: req.Description, Type: req.Type, ParentID: req.ParentID,
+		Name: req.Name, Description: req.Description, Type: req.Type, Icon: req.Icon, ParentID: req.ParentID,
 	}
 	if err := database.DB.Create(&perm).Error; err != nil {
 		logger.Errorf(c, "SystemPermissionCreate 失败: %v", err)
@@ -456,6 +459,9 @@ func SystemPermissionUpdate(c *gin.Context) {
 	}
 	if req.Type != "" {
 		updates["type"] = req.Type
+	}
+	if req.Icon != "" {
+		updates["icon"] = req.Icon
 	}
 	if req.ParentID != nil {
 		if *req.ParentID > 0 {
@@ -517,7 +523,7 @@ func SystemPermissionList(c *gin.Context) {
 			pid = *p.ParentID
 		}
 		group[pid] = append(group[pid], PermissionTreeItem{
-			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
+			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Icon: p.Icon,
 		})
 	}
 
@@ -526,7 +532,7 @@ func SystemPermissionList(c *gin.Context) {
 	for _, p := range flat {
 		if p.ParentID == nil {
 			node := PermissionTreeItem{
-				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
+				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Icon: p.Icon,
 			}
 			node.Children = group[p.ID]
 			tree = append(tree, node)
@@ -541,6 +547,7 @@ func SystemPermissionList(c *gin.Context) {
 
 // MenuItem 菜单树节点
 type MenuItem struct {
+	Icon        string     `json:"icon"`
 	ID          int        `json:"id"`
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
@@ -594,7 +601,7 @@ func SystemMenuList(c *gin.Context) {
 			pid = *p.ParentID
 		}
 		group[pid] = append(group[pid], MenuItem{
-			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Route: route,
+			ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Icon: p.Icon, Route: route,
 		})
 	}
 
@@ -602,7 +609,7 @@ func SystemMenuList(c *gin.Context) {
 	for _, p := range perms {
 		if p.ParentID == nil {
 			node := MenuItem{
-				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type,
+				ID: p.ID, Name: p.Name, Description: p.Description, Type: p.Type, Icon: p.Icon,
 			}
 			node.Children = group[p.ID]
 			tree = append(tree, node)

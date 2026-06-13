@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Management, User, Setting, Fold, Expand, Menu, UserFilled } from '@element-plus/icons-vue'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import { Fold, Expand, Menu, Management } from '@element-plus/icons-vue'
 import { api, getToken, removeToken } from './utils/request'
 
 const router = useRouter()
@@ -20,10 +21,9 @@ watch(() => route.path, async (path) => {
   }
 }, { immediate: true })
 
-function getMenuIcon(name) {
-  const k = (name || '').split(':')[0]
-  const map = { user: User, admin: Management, role: UserFilled, perm: Setting }
-  return map[k] || Menu
+// 根据数据库中配置的图标名称动态解析 Element Plus 图标组件
+function getIcon(name) {
+  return name && ElementPlusIconsVue[name] ? ElementPlusIconsVue[name] : Menu
 }
 
 async function handleLogout() {
@@ -56,13 +56,18 @@ async function handleLogout() {
         </el-menu-item>
 
         <template v-for="item in menus" :key="item.id">
+          <!-- 目录 → el-sub-menu（第一级） -->
           <el-sub-menu v-if="item.type === 'dir' && item.children?.length" :index="'dir-' + item.id">
             <template #title>
-              <el-icon><component :is="getMenuIcon(item.name)" /></el-icon>
+              <el-icon><component :is="getIcon(item.icon)" /></el-icon>
               <span>{{ item.description || item.name }}</span>
             </template>
+            <!-- 菜单页 → el-menu-item（第二级） -->
             <el-menu-item v-for="child in item.children" :key="child.id" :index="child.route || ''">
-              <template #title>{{ child.description || child.name }}</template>
+              <template #title>
+                <el-icon v-if="child.type === 'menu' && child.icon" :size="14"><component :is="getIcon(child.icon)" /></el-icon>
+                <span>{{ child.description || child.name }}</span>
+              </template>
             </el-menu-item>
           </el-sub-menu>
         </template>
