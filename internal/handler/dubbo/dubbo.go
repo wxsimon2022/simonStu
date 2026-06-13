@@ -110,7 +110,7 @@ func SayGoodBye(c *gin.Context) {
 		return
 	}
 
-	logger.Infof(c, "SayHello 成功 name=%s msg=%s", name, msg)
+	logger.Infof(c, "SayGoodBye 成功 name=%s msg=%s", name, msg)
 	response.Success(c, gin.H{
 		"message": msg,
 	})
