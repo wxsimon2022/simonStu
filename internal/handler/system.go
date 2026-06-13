@@ -57,10 +57,51 @@ func SystemAdminList(c *gin.Context) {
 		response.Error(c, http.StatusInternalServerError, "数据库未连接")
 		return
 	}
-	var list []adminItem
+
+	// 分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "15"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 15
+	}
+	offset := (page - 1) * pageSize
+
+	// 查询总数
+	var total int64
+	database.DB.Table("c_admin").Where("is_delete = 0").Count(&total)
+
+	// 分页扫描原始数据（time.Time 类型，后续用 Go 逻辑格式化）
+	type adminDBItem struct {
+		ID         int
+		Username   string
+		RealName   string
+		Phone      string
+		Email      string
+		Status     int
+		CreateTime time.Time
+	}
+	var dbItems []adminDBItem
 	database.DB.Table("c_admin").
-		Select("id, username, real_name, phone, email, status, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') AS create_time").
-		Where("is_delete = 0").Order("id DESC").Find(&list)
+		Select("id, username, real_name, phone, email, status, create_time").
+		Where("is_delete = 0").Order("id DESC").
+		Limit(pageSize).Offset(offset).Find(&dbItems)
+
+	// 转换为响应结构，Go 逻辑格式化时间（去掉时区）
+	list := make([]adminItem, len(dbItems))
+	for i, item := range dbItems {
+		list[i] = adminItem{
+			ID:         item.ID,
+			Username:   item.Username,
+			RealName:   item.RealName,
+			Phone:      item.Phone,
+			Email:      item.Email,
+			Status:     item.Status,
+			CreateTime: item.CreateTime.Format("2006-01-02 15:04:05"),
+		}
+	}
 
 	// 一次性查所有管理员的角色
 	type userRole struct {
@@ -85,7 +126,7 @@ func SystemAdminList(c *gin.Context) {
 		list[i].Roles = roleNames[list[i].ID]
 		list[i].RoleIDs = roleIDs[list[i].ID]
 	}
-	response.Success(c, gin.H{"list": list, "total": len(list)})
+	response.Success(c, gin.H{"list": list, "total": total})
 }
 
 // SystemAdminCreate 创建管理员（可选关联角色）

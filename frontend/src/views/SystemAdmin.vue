@@ -6,15 +6,20 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const list = ref([])
 const allRoles = ref([])
 const loading = ref(false)
+const pagination = ref({ currentPage: 1, pageSize: 15, total: 0 })
 const createVisible = ref(false)
 const editVisible = ref(false)
 const form = ref({ username: '', password: '', real_name: '', phone: '', email: '', role_ids: [] })
 const editForm = ref({ id: 0, real_name: '', phone: '', email: '', password: '', role_ids: [] })
 
-async function fetchData() {
+async function fetchData(p) {
+  if (p) pagination.value.currentPage = p
   loading.value = true
-  const res = await api('/api/admin')
-  if (res.code === 200) list.value = res.data.list
+  const res = await api('/api/admin?page=' + pagination.value.currentPage + '&page_size=' + pagination.value.pageSize)
+  if (res.code === 200) {
+    list.value = res.data.list
+    pagination.value.total = res.data.total
+  }
   loading.value = false
 }
 
@@ -112,6 +117,19 @@ onMounted(() => { fetchData(); fetchRoles() })
         </template>
       </el-table-column>
     </el-table>
+    <div class="pagination-wrap">
+      <el-pagination
+        v-model:current-page="pagination.currentPage"
+        v-model:page-size="pagination.pageSize"
+        :total="pagination.total"
+        :page-sizes="[10, 15, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        small
+        @current-change="fetchData"
+        @size-change="fetchData(1)"
+      />
+    </div>
   </el-card>
 
   <el-dialog v-model="createVisible" title="新建管理员" width="480px">
@@ -151,4 +169,11 @@ onMounted(() => { fetchData(); fetchRoles() })
     </template>
   </el-dialog>
 </template>
-<VUE
+
+<style scoped>
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+</style>
