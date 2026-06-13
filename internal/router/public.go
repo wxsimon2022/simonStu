@@ -5,6 +5,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/wxsimon8888/simonStu/internal/handler"
+	"github.com/wxsimon8888/simonStu/internal/handler/httpcall"
+	"github.com/wxsimon8888/simonStu/internal/handler/redis"
+	"github.com/wxsimon8888/simonStu/internal/handler/upload"
 )
 
 // RegisterPublicRoutes 注册所有不需要 JWT 认证的公开接口。
@@ -30,17 +33,17 @@ func RegisterPublicRoutes(api *gin.RouterGroup) {
 	api.GET("/concurrent/fetch", handler.ConcurrentMultiFetch)
 
 	// ———— HTTP 调用外部 API 示例 ————
-	// GET  /http/call       调用外部 HTTP API（GET 方式，传 url query 参数）
-	// POST /http/call       调用外部 HTTP API（POST 方式，传 JSON body）
-	// GET  /http/call/local 调用本项目的其他接口示例
-	api.Any("/http/call", handler.HttpCall)
-	api.GET("/http/call/local", handler.HttpCallLocal)
+	api.Any("/http/call", httpcall.HttpCall)
+	api.GET("/http/call/local", httpcall.HttpCallLocal)
 
 	// ———— 文件上传示例 ————
-	// POST /upload           单文件上传（字段名 file）
-	// POST /upload/multiple  多文件上传（字段名 files）
-	api.POST("/upload", handler.Upload)
-	api.POST("/upload/multiple", handler.UploadMultiple)
+	api.POST("/upload", upload.Upload)
+	api.POST("/upload/multiple", upload.UploadMultiple)
+
+	// ———— 多协程 Redis 操作示例 ————
+	api.POST("/redis/mget", redis.RedisMultiGet)
+	api.POST("/redis/mget/serial", redis.RedisMultiGetOneByOne)
+	api.POST("/redis/mset", redis.RedisMultiSet)
 
 	// ———— 综合测试 ————
 	api.GET("/test", handler.Test)

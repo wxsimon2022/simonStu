@@ -1,5 +1,5 @@
-// Package handler HTTP 调用示例。演示如何用 net/http 请求外部 API。
-package handler
+// Package httpcall HTTP 调用示例。演示如何用 net/http 请求外部 API。
+package httpcall
 
 import (
 	"bytes"
