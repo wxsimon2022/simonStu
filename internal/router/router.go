@@ -30,6 +30,7 @@ func Setup(mode string) *gin.Engine {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 	r.Use(middleware.CORS())
+	r.Static("/uploads", "storage/uploads")
 
 	// 公共接口（无需登录）
 	commonApi := r.Group("/commonApi")
